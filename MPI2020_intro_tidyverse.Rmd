@@ -1,0 +1,914 @@
+---
+title: '<center> <h1> A taste of data science using R and the ```tidyverse``` </h1> </center>'
+author: '[Antonio Schettino](https://asch3tti.netlify.com/ "Antonio Schettino")'
+date: 'January 15th, 2020'
+output:
+  html_document:
+    df_print: paged
+    theme: spacelab
+    highlight: tango
+    code_folding: show
+    toc: true
+    toc_float: true
+    includes:
+      after_body: footer.html
+editor_options: 
+  chunk_output_type: console
+---
+
+Today we will go through a series of steps that are familiar to many scientist doing empirical work. We will pretend to have collected some data[^1], **clean** them, **visualize** them, and **analyze** them using common statistical models. We will do all these things with the [```tidyverse```](https://www.tidyverse.org/), a collection of **R** packages for data manipulation and plotting that aims at being easily readable not only for machines, but also for humans[^2]. These operations will be run in an environment that ensures computational reproducibility: if you have the initial dataset, you will be able to reproduce the final results with a mouse click.
+
+On your computer, you should already have installed **R** and **RStudio** (if not, follow the instructions for your operating system [here](https://cloud.r-project.org/) and [here](https://rstudio.com/products/rstudio/download/#download)).
+
+# Setup
+
+One possible way to work on a project is to open a new _.R_ file and write your code there. However, there are a few disadvantages:
+
+* your collaborators may not have your same folder structure, i.e., where you store data and code
+    + you **could** specify a working directory with ```setwd()```, e.g., ```setwd("NAME/OF/YOUR/DIRECTORY")```
+* you cannot know the state of your collaborators' working environment, e.g., what functions or packages they have already loaded
+    + you **could** include, at the beginning of your script, the following lines:
+        - ```cat("\014")``` to clear the console
+        - ```rm(list = ls())``` to clear the environment (but it does **not** unload active packages!)
+
+You **could** do all those things, but... **should** you?
+
+<blockquote class="twitter-tweet" data-lang="en"><p lang="en" dir="ltr"><a href="https://twitter.com/hadleywickham/status/940021008764846080"></a></blockquote>
+<script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+[Jenny Bryan](https://jennybryan.org/) explains the reasons (without threats to commit arson) in [this blog post](https://www.tidyverse.org/blog/2017/12/workflow-vs-script/). The main idea is to package code in a self-contained environment that everyone (including your future self) can run without changing their own environment.
+
+## R Projects
+
+Following Jenny Brian's suggestion (and to avoid her wrath) we can create a project directly from RStudio:
+
+* click the “File” menu button, then “New Project”
+* click “New Directory”
+* click “New Project”
+* type in the name of the directory to store your project, e.g. “my_project”
+* click the “Create Project” button
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Install packages
+
+How to install packages:
+
+```{r setup_install_packages, eval = FALSE}
+
+install.packages("tidyverse")
+```
+
+It's good to know where your packages are. Type ```.libPaths()```.
+
+```{r setup_install_packages_dir, echo = FALSE}
+
+.libPaths()
+```
+
+## Load packages
+
+How to load packages:
+
+```{r setup_load_packages, message = FALSE}
+
+library(tidyverse)
+```
+
+# Data manipulation
+
+The data are in *.dat* format, so we are going to load them using ```read.table```.
+
+```{r load_data}
+
+att <-
+  read.table(
+    "MixedAttitude.dat", # file name
+    header = TRUE # data has headers
+  )
+```
+
+If you don't know what a function does, access the help (e.g., ```?read.table```).   
+   
+Let's have a look at the data. If you have **RStudio**, you can click on the name of the dataset in the *Environment* window (by default on the upper right corner).   
+   
+You can also type the name of the dataset in the console:
+
+```{r see_data, cols.print = 11, rows.print = 21}
+
+att
+```
+
+These are the data of `r length(unique(att$ssj))` participants who saw **neutral**, **positive**, or **negative** advertisement of **beer**, **wine**, and **water** in 3 separate sessions. They were asked to rate the drinks on a scale ranging from – 100 (*dislike very much*) through 0 (*neutral*) to 100 (*like very much*). Researchers wanted to reduce binge drinking in teenagers, so they hoped that pairing negative imagery with alcoholic beverages would lower these ratings[^3].
+
+## Filtering
+
+Looking at the data, you can see that the ratings of participant #99 are a bit strange... perhaps there was a technical problem, i.e., the rating scale was out of the -100/100 range.   
+   
+Let's filter this participant out. More specifically, we keep all participants that are **not** participant #99.
+
+```{r filter}
+att.filter <-
+  att %>%
+  filter(ssj != 99)
+```
+
+Verify that it worked.
+
+```{r filter_output, cols.print = 11, rows.print = 21}
+att.filter
+```
+
+The symbol **```%>%```** is the **pipe operator** , which allows to serially concatenate functions applied to the same data frame. Read it as _**"and then"**_. In the example below, we called the data frame ```att``` **and then** applied the ```filter``` function to discard participant #99.
+
+## Variable selection
+
+For the exercises in this course, we will only need a subset of variables in this dataset.   
+   
+Researchers were interested in reducing binge drinking, so we will focus our attention on **negative** imagery and one alcoholic beverage. We choose **beer**, because we are in Belgium. We also need control conditions, i.e., **neutral** imagery and **water**.
+   
+In the next code, we will simultaneously **select** and **rename** the variables we want to keep.
+
+```{r select, cols.print = 7}
+att.filter.select <-
+  att.filter %>%
+  select(
+    participant = ssj, # new name = old name
+    gender,
+    beer_negative = beerneg,
+    beer_neutral = beerneut,
+    water_negative = waterneg,
+    water_neutral = waterneu
+  )
+
+head(att.filter.select, n = 5) # show only first 5 rows
+```
+
+## Recoding
+
+Let's look at the variable ```gender```:
+
+```{r recode_look}
+att.filter.select$gender
+```
+
+A string of 1s and 2s. It's easy to get a glimpse of this variable because there are not many observations. When you have more observations, better use ```unique```:
+
+```{r recode_look_unique}
+unique(att.filter.select$gender)
+```
+
+What type of variable is it?
+
+```{r recode_look_vartype}
+class(att.filter.select$gender)
+```
+
+Class ```integer``` has only integer values (i.e., no decimals or complex numbers).   
+   
+There are many variable types in **R**. An interesting one is ```factor```, i.e., variables which can have only a limited number of different values... they are basically **categorical** variables. In our case, it would make sense to consider ```gender``` as a ```factor``` with two levels, *male* and *female*. Let's transform it:
+
+```{r recode, cols.print = 8}
+# Field et al. do not specify the coding,
+# so we will assume that 1 is female and 2 is male
+att.filter.select.recode <-
+  att.filter.select %>%
+  mutate(sex = recode( # create a new variable 'sex'
+    factor(gender), # convert variable 'gender' as factor
+    "1" = "female", "2" = "male"
+  )) # assign labels to factor levels
+
+head(att.filter.select.recode, n = 5)
+```
+
+Now we have two variables with identical information... let's get rid of ```gender```:
+
+```{r recode_noGender, cols.print = 8}
+att.filter.select.recode <- # over-write the previous data frame
+  att.filter.select.recode %>%
+  select(-gender) # discard unused variables with '-'
+
+head(att.filter.select.recode, n = 5)
+```
+    
+## Converting
+    
+Data frames can be in **wide** or **long** format:
+
+* **wide** format: **participants** as **rows**, **conditions** as **columns** (e.g., *SPSS*)
+* **long** format: every **row** represents an **observation** belonging to a particular **condition**
+
+Our data are now in wide format. However, the packages we are going to use in this course need data in long format. Let's convert from wide to long:
+
+```{r convert}
+att.filter.select.recode.long <-
+  att.filter.select.recode %>%
+  gather(
+    key = "condition", # name of new variable with all condition levels
+    value = "ratings", # name of new variable with all values
+    beer_negative:water_neutral
+  ) # variables to be collapsed
+
+head(att.filter.select.recode.long, n = 5)
+```
+
+The column ```ratings``` contains the values of our dependent variable, whereas ```condition``` contains all our conditions.   
+    
+This experiment has two independent variables, **drink** (beer or water) and **imagery** (neutral or negative). In our analysis, we wish to know the *separate* contribution of these two independent variables and their *interaction*.   
+So, we need to separate ```condition``` into 2 variables:
+
+```{r separate}
+att.filter.select.recode.long.sep <-
+  att.filter.select.recode.long %>%
+  separate(condition, c("drink", "imagery")) %>% # the separation occurs here
+  # over-write participant, drink, and imagery
+  # and transform them to factors
+  mutate(
+    participant = factor(participant),
+    drink = factor(drink),
+    imagery = factor(imagery)
+  )
+
+head(att.filter.select.recode.long.sep, n = 5)
+```
+
+## Saving
+
+The original data are saved in a *.dat* file. This format is not what the cool kids use. Let's save our processed data as *.csv*.
+
+```{r write_csv}
+write_csv(
+  att.filter.select.recode.long.sep,
+  paste0(getwd(), "/data_attitude.csv")
+) # full path & file name
+```
+
+If you want to **read** from *.csv*, use ```read_csv```.
+
+## Concatenate operations
+
+Thanks to the versatility of the ```tidyverse``` (especially the pipe operator), all the above operations can be performed in one go:
+
+```{r all_operations}
+att.filter.select.recode.long.sep <-
+  read.table(
+    "MixedAttitude.dat",
+    header = TRUE
+  ) %>%
+  filter(ssj != 99) %>%
+  select(
+    participant = ssj,
+    gender,
+    beer_negative = beerneg,
+    beer_neutral = beerneut,
+    water_negative = waterneg,
+    water_neutral = waterneu
+  ) %>%
+  mutate(sex = recode(
+    factor(gender),
+    "1" = "female", "2" = "male"
+  )) %>%
+  select(-gender) %>%
+  gather(
+    key = "condition",
+    value = "ratings",
+    beer_negative:water_neutral
+  ) %>%
+  separate(condition, c("drink", "imagery")) %>%
+  mutate(
+    participant = factor(participant),
+    drink = factor(drink),
+    imagery = factor(imagery)
+  ) %>%
+  write_csv(
+    ., # the point indicates the current data frame
+    paste0(getwd(), "/data_attitude.csv")
+  )
+
+head(att.filter.select.recode.long.sep, n = 5)
+```
+
+## Summary
+
+It is often required to provide summary statistics of the data. How to do it with ```tidyverse```?
+
+```{r summary}
+summary.att.filter.select.recode.long.sep <-
+  att.filter.select.recode.long.sep %>%
+  group_by(drink, imagery) %>% # group according to conditions
+  summarize(
+    n = n(), # number of observations
+    mean = mean(ratings), # mean
+    sd = sd(ratings), # standard deviation
+    sem = sd / sqrt(n), # standard error of the mean
+    min = min(ratings), # range (min)
+    max = max(ratings), # range (max)
+    ci.95 = 1.96 * sem
+  ) %>% # 95% confidence interval
+  print(.) # another way of displaying the results in console
+```
+
+# Exercises
+
+## Exercise 1
+
+Do the following operations _**in one go**_:
+
+* load the original data (```MixedAttitude.dat```)
+* convert ```gender``` to a **categorical** variable with 2 levels:
+    - 1 --> female
+    - 2 --> male
+* eliminate from the dataset the following variables: ```beerpos```, ```beerneg```, ```beerneut```, ```winepos```, ```waterpos```
+* using the function ```rename```, rename the variables you kept:
+    - ssj --> participant
+    - wineneg --> wine_negative
+    - wineneut --> wine_neutral
+    - waterneg --> water_negative
+    - waterneu --> water_neutral
+* filter out all participants who rated water preceded by neutral imagery as _**lower than -10**_
+* convert the dataset to **long** format
+* separate conditions into 2 variables (**drink** and **imagery**) and convert them to factors
+* save the dataset as ```data_attitude_exercise.csv```
+* separately for **drink**, **imagery**, and **gender**, calculate the following summary statistics:
+    - number of observations
+    - median
+    - median absolute deviation
+    - minumum value
+    - maximum value
+* display the results in console
+
+```{r exercise_1}
+
+################################################
+############### INSERT CODE HERE ###############
+################################################
+```
+
+# Plotting
+
+Plotting is one of the most satisfying things to do in **R**, especially if you use the package ```ggplot2```... part of the ```tidyverse```!   
+   
+In a nutshell, ```ggplot2``` allows you to build plots iteratively using a series of layers. You start with a **dataset** and specify its **aesthetics** (e.g., which variable should be represented on the x-axis?). Later, you can add layers with annotations, statistical summaries, and so on.
+
+## Bar plot
+
+Let's start by creating a basic bar plot. We will use the data frame with the summary statistics that we just created.
+
+```{r barplot_1}
+summary.att.filter.select.recode.long.sep %>%
+  ggplot(
+    ., # data
+    aes(
+      x = drink, # 'drink' variable on x-axis
+      y = mean, # mean ratings on y-axis
+      fill = imagery
+    )
+  ) + # separate colors for each level of 'imagery'
+  geom_bar(stat = "identity") # use the values in the data frame (no transformations)
+```
+
+What the hell is that?!? Oh no, it's a **stacked bar graph**! We don't want that! How can we get separate bars for negative and neutral imagery?
+
+```{r barplot_2}
+summary.att.filter.select.recode.long.sep %>%
+  ggplot(
+    .,
+    aes(
+      x = drink,
+      y = mean,
+      fill = imagery
+    )
+  ) +
+  geom_bar(
+    stat = "identity",
+    position = position_dodge()
+  ) # bars are next to each other
+```
+
+Better. Let's add outlines.
+
+```{r barplot_3}
+summary.att.filter.select.recode.long.sep %>%
+  ggplot(
+    .,
+    aes(
+      x = drink,
+      y = mean,
+      fill = imagery
+    )
+  ) +
+  geom_bar(
+    stat = "identity",
+    position = position_dodge(),
+    color = "black", # black outlines
+    size = 1
+  ) # line thickness
+```
+
+Something is missing... ah, error bars! Display 95% confidence intervals.
+
+```{r barplot_4}
+summary.att.filter.select.recode.long.sep %>%
+  ggplot(
+    .,
+    aes(
+      x = drink,
+      y = mean,
+      fill = imagery
+    )
+  ) +
+  geom_bar(
+    stat = "identity",
+    position = position_dodge(),
+    color = "black",
+    size = 1
+  ) +
+  geom_errorbar(aes(
+    ymin = mean - ci.95, # mean ratings ± 95% confidence interval
+    ymax = mean + ci.95
+  ),
+  width = .2, # width of the error bars
+  position = position_dodge(.9)
+  ) # position (centered on the bar)
+```
+
+These colors are hideous... let's use a more decent color palette.   
+   
+The package ```viridis``` uses colors that are easier to distinguish for people with colorblindness.
+
+```{r install_viridis, eval = FALSE}
+install.packages("viridis")
+```
+
+```{r barplot_5, message = FALSE}
+library(viridis)
+
+summary.att.filter.select.recode.long.sep %>%
+  ggplot(
+    .,
+    aes(
+      x = drink,
+      y = mean,
+      fill = imagery
+    )
+  ) +
+  geom_bar(
+    stat = "identity",
+    position = position_dodge(),
+    color = "black",
+    size = 1
+  ) +
+  geom_errorbar(aes(
+    ymin = mean - ci.95,
+    ymax = mean + ci.95
+  ),
+  width = .2,
+  position = position_dodge(.9)
+  ) +
+  scale_fill_viridis(
+    option = "viridis", # see ?scale_color_viridis for other color palettes
+    discrete = TRUE
+  ) # map colors to discrete values
+```
+
+Let's add a final cosmetic touch.
+
+```{r barplot_6}
+summary.att.filter.select.recode.long.sep %>%
+  ggplot(
+    .,
+    aes(
+      x = drink,
+      y = mean,
+      fill = imagery
+    )
+  ) +
+  geom_bar(
+    stat = "identity",
+    position = position_dodge(),
+    color = "black",
+    size = 1
+  ) +
+  geom_errorbar(aes(
+    ymin = mean - ci.95,
+    ymax = mean + ci.95
+  ),
+  width = .2,
+  position = position_dodge(.9)
+  ) +
+  scale_fill_viridis(
+    option = "viridis",
+    discrete = TRUE
+  ) +
+  scale_y_continuous("", # y-axis: no title
+    limits = c(-15, 15), # y-axis: min/max values
+    breaks = seq(-15, 15, 5)
+  ) + # y-axis: tick marks
+  ggtitle("mean ratings") + # plot title
+  theme_classic(base_size = 18) + # text size
+  theme(
+    plot.title = element_text(
+      size = 24, # title: text size
+      hjust = .5
+    ), # title: centered
+    legend.position = c(.9, .9)
+  ) # legend position (upper right corner)
+```
+
+## RDI plots
+
+No matter how pretty a bar graph is, it remains a suboptimal way of displaying your data.   
+A better solution is to use **RDI** plots, which show **R**aw data, **D**escriptive & **I**nferential statistics.   
+   
+The following graph shows:
+
+* points representing the raw data
+* smoothed densities
+* box and whisker plot:
+    - vertical bars: medians
+    - boxes: upper and lower quartiles
+    - whiskers: minimum and maximum values
+
+```{r RDI_ggplot}
+att.filter.select.recode.long.sep %>% # we need the complete data frame, not the summary
+  unite("condition", c(drink, imagery)) %>% # paste 'drink' and 'imagery' columns into 'condition'
+  # base plot
+  ggplot(
+    .,
+    aes(
+      x = condition,
+      y = ratings
+    )
+  ) +
+  # box and whisker plot
+  geom_boxplot(
+    alpha = 1, # boxes: transparency
+    size = .5, # boxes: line thickness
+    outlier.alpha = 0
+  ) + # outliers: transparency
+  stat_boxplot(
+    geom = "errorbar", # whiskers
+    size = .5, # whiskers: line thickness
+    width = .25
+  ) + # whiskers: width
+  # violin plot
+  geom_violin(aes(fill = condition), # density: color fill
+    color = "transparent", # outline: color
+    alpha = .25
+  ) + # density: transparency
+  # jittered data points
+  geom_jitter(
+    size = 3, # point: size
+    alpha = .3, # point: transparency
+    position = position_jitter(width = .1)
+  ) + # point: jitter
+  scale_fill_viridis(
+    option = "viridis", # color palette for all fills
+    discrete = TRUE
+  ) +
+  scale_color_viridis(
+    option = "viridis", # color palette for all outlines
+    discrete = TRUE
+  ) +
+  scale_x_discrete(
+    limits = # x-axis: set variable order
+    c(
+      "water_neutral", "water_negative",
+      "beer_neutral", "beer_negative"
+    )
+  ) +
+  scale_y_continuous(
+    name = "", # y-axis: title
+    limits = c(-25, 35), # y-axis: min/max values
+    breaks = seq(-25, 35, 5)
+  ) + # y-axis: tick marks
+  geom_hline(
+    yintercept = seq(-25, 35, 5), # reference lines
+    linetype = "dotted", # reference lines: type
+    colour = "#999999", # reference lines: color
+    size = .8, # reference lines: thickness
+    alpha = .5
+  ) + # reference lines: transparency
+  ggtitle("mean ratings") + # plot title
+  theme_classic(base_size = 18) + # custom theme (resize text)
+  theme(
+    legend.position = "none", # no legend
+    plot.title = element_text(size = 24, hjust = .5)
+  ) # resize and center title
+```
+
+If you don't want to waste time doing it yourself, I recommend the [```yarrr```](https://cran.r-project.org/web/packages/yarrr/vignettes/pirateplot.html) package.   
+   
+```{r install_yarrr, eval = FALSE}
+install.packages("yarrr")
+```
+
+The ```pirateplot``` function creates a graph showing:
+
+* points representing the raw data
+* smoothed densities
+* vertical bars showing central tendencies
+* rectangles representing inference intervals (e.g., 95% confidence intervals)
+
+```{r RDI_pirateplot, message = FALSE}
+library(yarrr)
+
+pirateplot(
+  formula = ratings ~ imagery + drink, # dependent ~ independent variables
+  data = att.filter.select.recode.long.sep, # data frame
+  main = "mean ratings", # plot title
+  ylim = c(-25, 35), # y-axis: axis limits
+  ylab = "", # y-axis: no label
+  inf.method = "ci", # type of inference: 95% confidence interval
+  inf.within = participant, # ID variable
+  # theme settings
+  pal = "espresso", # color palette: see piratepal("all")
+  point.o = .5, # data points: opacity (0-1)
+  point.cex = 1.3, # data points: size
+  bean.b.o = .6, # bean border: opacity (0-1)
+  bean.f.o = .6, # bean filling: opacity (0-1)
+  cap.beans = TRUE, # bean densities are capped at the data limits
+  bty = "n", # no box around the plot
+  gl.col = "gray", # background line color (major and minor lines)
+  gl.lwd = 1, # background line width
+  gl.lty = 2
+) # background line type (dashed)
+```
+
+The graphs above suggest that negative imagery may have influenced ratings to water more than to beer. 
+
+# Exercises
+
+## Exercise 2.1
+
+Compute the following operations _**in one go**_:
+
+* load ```data_attitude_exercise.csv``` (use a function from the ```tidyverse``` instead of ```read.table```)
+* separately for **drink**, **imagery**, and **gender**, calculate the summary statistics that you will need for the plot (i.e., means and 95% confidence intervals)
+* create bar graphs:
+    - separate bars for negative and neutral imagery
+    - separate graphs for **male** and **female** participants, placed horizontally (**hint**: use ```facet_grid```)
+    - black outlines
+    - error bars displaying 95% confidence intervals
+    - ```viridis``` color palette
+    - no title on the *x*-axis
+    - limit the *y*-axis from -20 to +20, with tick marks every 5
+    - add a plot title
+    - text size in the plot: 18 points
+    - text size of the title: 32 points
+    - title in the center
+    - legend position in the center of the graph (not overlapping with the bars)
+    - no legend title
+    - no legend background
+
+```{r exercise_2_1, message = FALSE}
+
+################################################
+############### INSERT CODE HERE ###############
+################################################
+```
+
+## Exercise 2.2
+
+Compute the following operations _**in one go**_:
+
+* load ```data_attitude_exercise.csv```
+* using the ```yarrr``` package, create an RDI graph similar to the bar graph of **Exercise 2.1** (i.e., separate graphs for female and male participants)
+* modify it as you please (check the ```pirateplot``` options), e.g., change color palette (**hint**: type ```piratepal("all")```)
+
+```{r exercise_2_2, message = FALSE}
+
+################################################
+############### INSERT CODE HERE ###############
+################################################
+```
+
+# Data analysis
+
+The aim of this study was to assess whether negative imagery would influence the likeness ratings of alcoholic beverages. It's time to statistically verify this hypothesis.   
+   
+We will run a 2 (**drink**: water, beer) x 2 (**imagery**: neutral, negative) repeated measures ANOVA on these ratings.   
+   
+For this demonstration I chose the package ```afex```, authored by [Henrik Singmann](http://singmann.org/about-me/).
+
+```{r install_afex, eval = FALSE}
+install.packages("afex") # 'afex' also installs many other useful packages... including 'brms'!
+```
+
+## Repeated measures ANOVA
+
+The code below shows how to run an ANOVA with this versatile and user-friendly package.
+
+```{r rmANOVA, message = FALSE}
+library(afex)
+library(multcomp) # we didn't explicitly install this package, but it's part of the dependencies of 'afex'
+
+rmANOVA.att <- aov_ez("participant", # variable with subject identifier
+  "ratings", # dependent variable
+  att.filter.select.recode.long.sep, # data frame
+  within = c("drink", "imagery"), # within-subject variables
+  type = 3
+) # type-III sums of squares (default in SPSS)
+
+rmANOVA.att
+```
+
+The results show:
+
+* a statistically significant main effect of _**drink**_ (*F*<sub>(`r summary(rmANOVA.att)$univariate.tests[2, 2]`, `r summary(rmANOVA.att)$univariate.tests[2, 4]`)</sub> = `r format(rmANOVA.att$anova_table$F[1], digits = 3)`, *p* = `r format(summary(rmANOVA.att)$univariate.tests[2, 6], digits = 1)`, $\eta$<sup>2</sup><sub>G</sub> = `r format(rmANOVA.att$anova_table$ges[1], digits = 2)`)
+* a statistically significant main effect of _**imagery**_ (*F*<sub>(`r summary(rmANOVA.att)$univariate.tests[3, 2]`, `r summary(rmANOVA.att)$univariate.tests[3, 4]`)</sub> = `r format(rmANOVA.att$anova_table$F[2], digits = 4)`, *p* = `r format(summary(rmANOVA.att)$univariate.tests[3, 6], digits = 2)`, $\eta$<sup>2</sup><sub>G</sub> = `r format(rmANOVA.att$anova_table$ges[2], digits = 2)`)
+* a statistically significant _**drink x imagery**_ interaction (*F*<sub>(`r summary(rmANOVA.att)$univariate.tests[4, 2]`, `r summary(rmANOVA.att)$univariate.tests[4, 4]`)</sub> = `r format(rmANOVA.att$anova_table$F[3], digits = 3)`, *p* = `r format(summary(rmANOVA.att)$univariate.tests[4, 6], digits = 2)`, $\eta$<sup>2</sup><sub>G</sub> = `r format(rmANOVA.att$anova_table$ges[3], digits = 1)`)
+
+## Paired contrasts
+
+The _**drink x imagery**_ interaction is statistically significant... let's run paired comparisons. ```afex``` uses functions included in the ```emmeans``` and ```multcomp``` packages.
+
+```{r paired_contrasts}
+
+library(emmeans) # we didn't explicitly install this package, but it's part of the dependencies of 'afex'
+
+# set afex_options as below to use appropriate degrees of freedom (not Satterthwaite approximated)
+# for details, see https://cran.r-project.org/web/packages/afex/vignettes/afex_anova_example.html#post-hoc-contrasts-and-plotting
+afex_options(emmeans_model = "multivariate")
+
+posthoc.att <-
+  emmeans(rmANOVA.att, ~ imagery:drink) %>% # estimated marginal means
+  pairs(., # compare differences between estimated marginal means
+    test = adjusted("free")
+  ) %>% # "free": generalization of Bonferroni-Holm correction, taking into account correlations among model parameters
+  as.glht(.) %>% # better p-value adjustment for multiple testing
+  summary(.) %>% # cleaner output
+  print(.)
+```
+
+The output has all you need to report in a publication... well, almost. Something is missing.   
+   
+## Effect sizes
+
+It is good practice to report **effect sizes** along with *p*-values, so that readers can make their own mind with respect to the importance of the observed effects. Even better, you could report **confidence intervals** around effect sizes, so that readers can have a clear picture of the *precision* of your estimation.   
+   
+I particularly like the idea of **bootstrapping** effect sizes, a better approach when the data are known not to be normally distributed or when the distribution is unknown[^4]. I will show you how to do it using the package ```bootES```[^5].   
+
+```{r install_bootES, eval = FALSE}
+install.packages("bootES")
+```
+
+We will compute **Hegdes's _g_**, an unbiased estimate of $\delta$ (for details, see [here](http://journals.sagepub.com/doi/abs/10.1177/0013164404264850))
+   
+Because our dependent variable consists of ratings collected from the same participants in different conditions (i.e., repeated measures), we must first manually compute the difference scores between our contrasts of interest (see the output of the paired comparisons above).
+
+```{r bootES_data_preparation}
+att.bootES <-
+  att.filter.select.recode.long.sep %>%
+  unite("condition", c(drink, imagery)) %>% # create 'condition' variable
+  spread(condition, ratings) %>% # convert from long to wide format
+  # compute mean differences
+  mutate(
+    beer_negativeVSbeer_neutral = beer_negative - beer_neutral,
+    beer_negativeVSwater_negative = beer_negative - water_negative,
+    beer_negativeVSwater_neutral = beer_negative - water_neutral,
+    beer_neutralVSwater_negative = beer_neutral - water_negative,
+    beer_neutralVSwater_neutral = beer_neutral - water_neutral,
+    water_negativeVSwater_neutral = water_negative - water_neutral
+  ) %>%
+  # delete unused variables
+  # here we must specify that we want to use the 'select' function from 'dplyr' (part of the 'tidyverse'), because there is another function ('lm.ridge' in the 'MASS' package) that creates conflict
+  dplyr::select(-c(beer_negative:water_neutral)) %>%
+  # re-convert to long format
+  gather(
+    key = "diff.conds",
+    value = "ratings",
+    beer_negativeVSbeer_neutral:water_negativeVSwater_neutral
+  )
+
+head(att.bootES, n = 5)
+```
+
+Now we can calculate the standardized effect size for each difference scores. Using functions in the ```purrr``` package (part of the ```tidyverse```!), we will create separate lists for each difference score and calculate bootstrapped Hegdes's _g_ for each of them.
+
+```{r bootES_purrr, message = FALSE, cols.print = 12}
+library(bootES)
+
+att.HedgesG <-
+  att.bootES %>%
+  split(.$diff.conds) %>% # split difference scores in separate lists
+  # apply bootES function to all lists
+  map(~ bootES(., # data
+    data.col = "ratings", # dependent variable
+    R = 5000, # number of samples
+    effect.type = "hedges.g", # type of effect size
+    ci.type = "bca", # bootstrap method
+    ci.conf = .95
+  )) # confidence level
+```
+
+The result is a data frame containing `r length(unique(att.bootES$diff.conds))` lists (i.e., the number of ```diff.conds```), each containing the results of the bootstrapping procedure. As an example, let's look at the list containing the bootstrapped Hegdes's _g_ for the difference ratings of beer after seeing negative vs. neutral imagery:
+
+```{r bootES_purrr_output}
+att.HedgesG$beer_negativeVSbeer_neutral
+```
+
+## Summary of paired contrasts
+
+The final step is to summarize the information stored in different lists in one single data frame that can later be converted into a table and cleaned up for publication. This is one way to do it:
+
+```{r bootES_summary}
+# initialize summary table: what do you want to report?
+summary.att.bootES <- data.frame(magrittr::extract2(posthoc.att, 1)$object, # extract2, a function of 'magrittr' (part of the 'tidyverse'!), extracts values from lists (similarly to [[]] in base R)
+  "Hedges.g" = NA,
+  "CI.95.low" = NA,
+  "CI.95.high" = NA,
+  "bias" = NA,
+  "std.error" = NA
+)
+
+# OH MY GOD A LOOP IN R!
+for (i in 1:length(unique(att.bootES$diff.conds))) { # loop through conditions
+  summary.att.bootES[i, 7:11] <- summary(magrittr::extract2(att.HedgesG, i)) # extract values from the list with bootstrapped Hedges's g
+}
+
+summary.att.bootES
+```
+
+# Exercises
+
+## Exercise 3.1
+
+Run the same analyses using the exercise dataset (i.e., wine instead of beer):
+
+* 2 (**drink**) x 2 (**imagery**) repeated measures ANOVA on likeness ratings
+* paired contrasts
+* bootstrapped effect sizes (calculate **Pearson's _r_** instead of Hegdes's _g_)
+* summary table of paired contrasts
+
+```{r exercise_3_1, message = FALSE}
+
+################################################
+############### INSERT CODE HERE ###############
+################################################
+```
+
+## Exercise 3.2
+
+Run a 2 (**gender**) x 2 (**drink**) x 2 (**imagery**) mixed ANOVA on likeness ratings:
+
+* remember: ```gender``` is a between-subject factor!
+* paired contrasts: test **only** difference ratings between *female* and *male* participants (**hint**: see example [here](https://cran.r-project.org/web/packages/afex/vignettes/afex_anova_example.html#post-hoc-contrasts-and-plotting)):
+    - wine_negative
+    - wine_neutral
+    - water_negative
+    - water_neutral
+* bootstrapped effect sizes (**Cohen's _d_**) of the paired comparisons of interest
+* summary table of paired contrasts
+
+```{r exercise_3_2, message = FALSE}
+
+################################################
+############### INSERT CODE HERE ###############
+################################################
+```
+
+# Conclusion
+
+Hopefully, I managed to give you a glimpse of the versatility, readability, and user-friendliness of the ```tidyverse```. Enjoy your tidy new life! 
+
+<br>
+<center>
+<font size="38"> Thanks! </font>
+
+***
+***
+
+[^1]: Hopefully you're not familiar with _**pretending**_ to collect data... if so, please tell your story by writing a [book](http://nick.brown.free.fr/stapel/FakingScience-20161115.pdf).
+
+[^2]: As you may imagine, today we won't have time to cover all the amazing things you can do with these packages. Also, they are a gift that keeps on giving: I have been using them for a while and I keep discovering useful functions. If you want to learn more, read [R for Data Science](http://r4ds.had.co.nz/) by [Garrett Grolemund](https://www.oreilly.com/pub/au/5570) and [Hadley Wickham](http://hadley.nz/).
+
+[^3]: This is a modified version of a dataset included in the book [Discovering Statistics Using R (Field, Miles & Field, 2012)](https://www.discoveringstatistics.com/books/discovering-statistics-using-r/).
+
+[^4]: If you prefer **not** to bootstrap your effect sizes, you can use the ```MBESS``` package (a useful tutorial can be found [here](http://osc.centerforopenscience.org/2014/03/06/confidence%20intervals/)). If you want to do it in **SPSS**, see [here](https://daniellakens.blogspot.be/2014/06/calculating-confidence-intervals-for.html).
+
+[^5]: A clear explanation of how to use ```bootES``` is provided by the authors of the package in their [paper](https://link.springer.com/article/10.3758/s13428-013-0330-5).

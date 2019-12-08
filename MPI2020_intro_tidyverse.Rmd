@@ -16,6 +16,19 @@ editor_options:
   chunk_output_type: console
 ---
 
+```{r setup, include = FALSE}
+
+
+
+library(here)
+
+here()
+
+
+```
+
+
+
 Today we will go through a series of steps that are familiar to many scientist doing empirical work. We will pretend to have collected some data[^1], **clean** them, **visualize** them, and **analyze** them using common statistical models. We will do all these things with the [```tidyverse```](https://www.tidyverse.org/), a collection of **R** packages for data manipulation and plotting that aims at being easily readable not only for machines, but also for humans[^2]. These operations will be run in an environment that ensures computational reproducibility: if you have the initial dataset, you will be able to reproduce the final results with a mouse click.
 
 On your computer, you should already have installed **R** and **RStudio** (if not, follow the instructions for your operating system [here](https://cloud.r-project.org/) and [here](https://rstudio.com/products/rstudio/download/#download)).
@@ -45,12 +58,22 @@ Following Jenny Brian's suggestion (and to avoid her wrath) we can create a proj
 * click the “File” menu button, then “New Project”
 * click “New Directory”
 * click “New Project”
-* type in the name of the directory to store your project, e.g. “my_project”
+* type in the name of the directory to store your project, e.g. “YOURNAME_MPI2020_intro_tidyverse”
 * click the “Create Project” button
 
+If you check the directory you just created, you will see a file called ```YOURNAME_MPI2020_intro_tidyverse.Rproj```. If your RStudio session is still open, you will see that you already are in that directory.
 
+![](doc/images/magic.gif)
 
+## Install Packages
 
+It is time to install the first package of this session: ```here```. For a brief overview of what the package can do, see [this GitHub repository](https://github.com/jennybc/here_here) (authored by Jenny Bryan!).
+
+```{r setup_install_here, eval = FALSE}
+
+install.packages("here")
+
+```
 
 
 
@@ -105,9 +128,10 @@ The data are in *.dat* format, so we are going to load them using ```read.table`
 
 ```{r load_data}
 
+
 att <-
   read.table(
-    "MixedAttitude.dat", # file name
+    here::here("raw-data", "MixedAttitude.dat"), # file name
     header = TRUE # data has headers
   )
 ```
@@ -276,7 +300,7 @@ Thanks to the versatility of the ```tidyverse``` (especially the pipe operator),
 ```{r all_operations}
 att.filter.select.recode.long.sep <-
   read.table(
-    "MixedAttitude.dat",
+    here::here("raw-data", "MixedAttitude.dat"),
     header = TRUE
   ) %>%
   filter(ssj != 99) %>%

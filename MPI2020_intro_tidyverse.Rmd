@@ -498,91 +498,36 @@ Do the following operations _**in one go**_:
 
 # Plotting
 
-Plotting is one of the most satisfying things to do in **R**, especially if you use the package ```ggplot2```... part of the ```tidyverse```!   
-   
-In a nutshell, ```ggplot2``` allows you to build plots iteratively using a series of layers. You start with a **data set** and specify its **aesthetics** (e.g., which variable should be represented on the x-axis?). Later, you can add layers with annotations, statistical summaries, and so on.
+Plotting is one of the most satisfying things to do in **R**, especially if you use the package ```ggplot2```... part of the ```tidyverse```! In a nutshell, ```ggplot2``` allows you to build plots iteratively using a series of layers. You start with a **data set** and specify its **aesthetics** (e.g., which variable should be represented on the x-axis?). Later, you can add layers with annotations, statistical summaries, and so on.
 
-## Bar plot
+Last week you already followed the course of Prof. [Mine Çetinkaya-Rundel](http://www2.stat.duke.edu/~mc301/) on how to create beautiful visualizations with ```ggplot2```. I cannot possibly add anything more than what she already taught you. Here we will simply go through one of my preferred visualizations: **RDI** plots.
 
-Let's start by creating a basic bar plot. We will use the data frame with the summary statistics that we just created.
+RDI plots display **R**aw data, **D**escriptives, and **I**nferential statistics altogether. Nothing is hidden by useless bars, everything is shown so that readers can make up their minds. For example, the violin plot below shows:
 
-```{r barplot_1}
-summary.att.filter.select.recode.long.sep %>%
-  ggplot(
-    ., # data
-    aes(
-      x = drink, # 'drink' variable on x-axis
-      y = mean, # mean ratings on y-axis
-      fill = imagery
-    )
-  ) + # separate colors for each level of 'imagery'
-  geom_bar(stat = "identity") # use the values in the data frame (no transformations)
+* points representing the raw data
+* smoothed densities
+* box and whisker plot:
+    - vertical bars: medians
+    - boxes: upper and lower quartiles
+    - whiskers: minimum and maximum values
+
+
+
+
+```{r}
+
+# HERE ONLY DISPLAY FINAL GRAPH, 
+# BELOW SHOW CODE
+
 ```
 
-What the hell is that?!? Oh no, it's a **stacked bar graph**! We don't want that! How can we get separate bars for negative and neutral imagery?
 
-```{r barplot_2}
-summary.att.filter.select.recode.long.sep %>%
-  ggplot(
-    .,
-    aes(
-      x = drink,
-      y = mean,
-      fill = imagery
-    )
-  ) +
-  geom_bar(
-    stat = "identity",
-    position = position_dodge()
-  ) # bars are next to each other
-```
 
-Better. Let's add outlines.
 
-```{r barplot_3}
-summary.att.filter.select.recode.long.sep %>%
-  ggplot(
-    .,
-    aes(
-      x = drink,
-      y = mean,
-      fill = imagery
-    )
-  ) +
-  geom_bar(
-    stat = "identity",
-    position = position_dodge(),
-    color = "black", # black outlines
-    size = 1
-  ) # line thickness
-```
 
-Something is missing... ah, error bars! Display 95% confidence intervals.
 
-```{r barplot_4}
-summary.att.filter.select.recode.long.sep %>%
-  ggplot(
-    .,
-    aes(
-      x = drink,
-      y = mean,
-      fill = imagery
-    )
-  ) +
-  geom_bar(
-    stat = "identity",
-    position = position_dodge(),
-    color = "black",
-    size = 1
-  ) +
-  geom_errorbar(aes(
-    ymin = mean - ci.95, # mean ratings ± 95% confidence interval
-    ymax = mean + ci.95
-  ),
-  width = .2, # width of the error bars
-  position = position_dodge(.9)
-  ) # position (centered on the bar)
-```
+
+
 
 These colors are hideous... let's use a more decent color palette.   
    
@@ -592,80 +537,8 @@ The package ```viridis``` uses colors that are easier to distinguish for people 
 install.packages("viridis")
 ```
 
-```{r barplot_5, message = FALSE}
-library(viridis)
 
-summary.att.filter.select.recode.long.sep %>%
-  ggplot(
-    .,
-    aes(
-      x = drink,
-      y = mean,
-      fill = imagery
-    )
-  ) +
-  geom_bar(
-    stat = "identity",
-    position = position_dodge(),
-    color = "black",
-    size = 1
-  ) +
-  geom_errorbar(aes(
-    ymin = mean - ci.95,
-    ymax = mean + ci.95
-  ),
-  width = .2,
-  position = position_dodge(.9)
-  ) +
-  scale_fill_viridis(
-    option = "viridis", # see ?scale_color_viridis for other color palettes
-    discrete = TRUE
-  ) # map colors to discrete values
-```
 
-Let's add a final cosmetic touch.
-
-```{r barplot_6}
-summary.att.filter.select.recode.long.sep %>%
-  ggplot(
-    .,
-    aes(
-      x = drink,
-      y = mean,
-      fill = imagery
-    )
-  ) +
-  geom_bar(
-    stat = "identity",
-    position = position_dodge(),
-    color = "black",
-    size = 1
-  ) +
-  geom_errorbar(aes(
-    ymin = mean - ci.95,
-    ymax = mean + ci.95
-  ),
-  width = .2,
-  position = position_dodge(.9)
-  ) +
-  scale_fill_viridis(
-    option = "viridis",
-    discrete = TRUE
-  ) +
-  scale_y_continuous("", # y-axis: no title
-    limits = c(-15, 15), # y-axis: min/max values
-    breaks = seq(-15, 15, 5)
-  ) + # y-axis: tick marks
-  ggtitle("mean ratings") + # plot title
-  theme_classic(base_size = 18) + # text size
-  theme(
-    plot.title = element_text(
-      size = 24, # title: text size
-      hjust = .5
-    ), # title: centered
-    legend.position = c(.9, .9)
-  ) # legend position (upper right corner)
-```
 
 ## RDI plots
 
@@ -762,7 +635,7 @@ The ```pirateplot``` function creates a graph showing:
 * vertical bars showing central tendencies
 * rectangles representing inference intervals (e.g., 95% confidence intervals)
 
-```{r RDI_pirateplot, message = FALSE}
+```{r RDI_pirateplot}
 library(yarrr)
 
 pirateplot(
@@ -791,48 +664,19 @@ The graphs above suggest that negative imagery may have influenced ratings to wa
 
 # Exercises
 
-## Exercise 2.1
+## Exercise 2
 
 Compute the following operations _**in one go**_:
 
-* load ```data_attitude_exercise.csv``` (use a function from the ```tidyverse``` instead of ```read.table```)
-* separately for **drink**, **imagery**, and **gender**, calculate the summary statistics that you will need for the plot (i.e., means and 95% confidence intervals)
-* create bar graphs:
-    - separate bars for negative and neutral imagery
-    - separate graphs for **male** and **female** participants, placed horizontally (**hint**: use ```facet_grid```)
-    - black outlines
-    - error bars displaying 95% confidence intervals
-    - ```viridis``` color palette
-    - no title on the *x*-axis
-    - limit the *y*-axis from -20 to +20, with tick marks every 5
-    - add a plot title
-    - text size in the plot: 18 points
-    - text size of the title: 32 points
-    - title in the center
-    - legend position in the center of the graph (not overlapping with the bars)
-    - no legend title
-    - no legend background
-
-```{r exercise_2_1, message = FALSE}
-
-################################################
-############### INSERT CODE HERE ###############
-################################################
-```
-
-## Exercise 2.2
-
-Compute the following operations _**in one go**_:
-
-* load ```data_attitude_exercise.csv```
-* using the ```yarrr``` package, create an RDI graph similar to the bar graph of **Exercise 2.1** (i.e., separate graphs for female and male participants)
+* load ```data_attitude_wine.csv```
+* using the ```yarrr``` package, create an RDI graph similar to what is shown above
+**Exercise 2.1** (i.e., separate graphs for female and male participants)
 * modify it as you please (check the ```pirateplot``` options), e.g., change color palette (**hint**: type ```piratepal("all")```)
 
-```{r exercise_2_2, message = FALSE}
+```{r exercise_2}
 
-################################################
-############### INSERT CODE HERE ###############
-################################################
+# INSERT CODE HERE
+
 ```
 
 # Data analysis

@@ -1,0 +1,15 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+# Solutions
+
+## Exercise 1
+
+```{r install_load_tidyverse, eval = FALSE, results = 'hide'}
+
+install.packages("tidyverse")
+library(tidyverse)
+
+```

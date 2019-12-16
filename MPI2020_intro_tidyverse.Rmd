@@ -18,18 +18,12 @@ editor_options:
 
 ```{r setup, include = FALSE}
 
-
-
 library(here)
-
-here()
-
+library(tidyverse)
 
 ```
 
-
-
-Today we will go through a series of steps that are familiar to many scientist doing empirical work. We will pretend to have collected some data[^1], **clean** them, **visualize** them, and **analyze** them using common statistical models. We will do all these things with the [```tidyverse```](https://www.tidyverse.org/), a collection of **R** packages for data manipulation and plotting that aims at being easily readable not only for machines, but also for humans[^2]. These operations will be run in an environment that ensures computational reproducibility: if you have the initial dataset, you will be able to reproduce the final results with a mouse click.
+Today we will go through a series of steps that are familiar to many scientist doing empirical work. We will pretend to have collected some data[^1], **clean** them, **visualize** them, and **analyze** them using common statistical models. We will do all these things with the [```tidyverse```](https://www.tidyverse.org/), a collection of **R** packages for data manipulation and plotting that aims at being easily readable not only for machines, but also for humans[^2]. These operations will be run in an environment that ensures computational reproducibility: if you have the initial data set, you will be able to reproduce the final results with a mouse click.
 
 On your computer, you should already have installed **R** and **RStudio** (if not, follow the instructions for your operating system [here](https://cloud.r-project.org/) and [here](https://rstudio.com/products/rstudio/download/#download)).
 
@@ -58,128 +52,158 @@ Following Jenny Brian's suggestion (and to avoid her wrath) we can create a proj
 * click the “File” menu button, then “New Project”
 * click “New Directory”
 * click “New Project”
-* type in the name of the directory to store your project, e.g. “YOURNAME_MPI2020_intro_tidyverse”
+* type in the name of the directory to store your project, e.g., “YOURNAME_MPI2020_intro_tidyverse”
 * click the “Create Project” button
 
-If you check the directory you just created, you will see a file called ```YOURNAME_MPI2020_intro_tidyverse.Rproj```. If your RStudio session is still open, you will see that you already are in that directory.
+If you check the directory you just created, you will see a file called ```YOURNAME_MPI2020_intro_tidyverse.Rproj```. If your RStudio session is still open, look at the top of the active window: the R Project is already active.
 
 ![](doc/images/magic.gif)
 
 ## Install Packages
 
-It is time to install the first package of this session: ```here```. For a brief overview of what the package can do, see [this GitHub repository](https://github.com/jennybc/here_here) (authored by Jenny Bryan!).
+It is time to install the first package of this session: ```here```[^3]. For a brief overview of what the package can do, see [this GitHub repository](https://github.com/jennybc/here_here) (authored by Jenny Bryan!).
 
-```{r setup_install_here, eval = FALSE}
+```{r install_here, eval = FALSE}
 
 install.packages("here")
 
 ```
 
+Once the package is installed, we can load it:
 
+```{r load_here}
 
+library(here)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Install packages
-
-How to install packages:
-
-```{r setup_install_packages, eval = FALSE}
-
-install.packages("tidyverse")
 ```
 
-It's good to know where your packages are. Type ```.libPaths()```.
+This package is very useful to keep raw data, analysis scripts, preprocessed data, and reports in separate subdirectories (which is what you should always aim for). In which directory are we now?
 
-```{r setup_install_packages_dir, echo = FALSE}
+```{r here_basedir}
 
-.libPaths()
+here()
+
 ```
 
-## Load packages
+We are now in the directory of the _.Rproj_ file. However, our data are in a subdirectory called ```raw-data```. ```here``` allows you to link to that directory without actually going there.
 
-How to load packages:
+```{r here_datadir}
 
-```{r setup_load_packages, message = FALSE}
+here("raw-data")
 
-library(tidyverse)
+```
+
+In other words, we are still inside our _R Project_ directory (_`r here()`_) but we can load and save files inside the respective subfolders.
+
+Let's verify that the data we need are actually in the ```raw-data``` subdirectory:
+
+```{r filelist}
+
+list.files(here("raw-data"))
+
+```
+
+Yes, the file **`r list.files(here("raw-data"))`** is what we are going to play with today.
+
+## Exercise 1
+
+Install and load the ```tidyverse```.
+
+```{r install_load_tidyverse}
+
+################################################
+############### INSERT CODE HERE ###############
+################################################
+
 ```
 
 # Data manipulation
 
-The data are in *.dat* format, so we are going to load them using ```read.table```.
+The data are in *.dat* format... how can we load them?[^4] The function ```read_tsv``` from the ```readr``` package (part of the ```tidyverse```) can load this kind of tab-separated files:
 
 ```{r load_data}
 
+att <- read_tsv(here(
+  "raw-data",
+  "MixedAttitude.dat"
+))
 
-att <-
-  read.table(
-    here::here("raw-data", "MixedAttitude.dat"), # file name
-    header = TRUE # data has headers
-  )
 ```
 
-If you don't know what a function does, access the help (e.g., ```?read.table```).   
-   
-Let's have a look at the data. If you have **RStudio**, you can click on the name of the dataset in the *Environment* window (by default on the upper right corner).   
-   
-You can also type the name of the dataset in the console:
+For additional details on the arguments of this function, type ```?read_tsv``` in the console.
 
-```{r see_data, cols.print = 11, rows.print = 21}
+Now the data are in a ```tibble```, the equivalent of a ```data.frame``` in the ```tidyverse```. Type ```att``` (the name of the data set in our environment) in the console to see the first lines.
+
+```{r show_data}
 
 att
+
 ```
 
-These are the data of `r length(unique(att$ssj))` participants who saw **neutral**, **positive**, or **negative** advertisement of **beer**, **wine**, and **water** in 3 separate sessions. They were asked to rate the drinks on a scale ranging from – 100 (*dislike very much*) through 0 (*neutral*) to 100 (*like very much*). Researchers wanted to reduce binge drinking in teenagers, so they hoped that pairing negative imagery with alcoholic beverages would lower these ratings[^3].
+To see the full data set, click on ```att``` in the *Environment* window (by default on the upper right corner). 
+
+These are the data of `r length(unique(att$ssj))` participants who saw **neutral**, **positive**, or **negative** advertisement of **beer**, **wine**, and **water** in 3 separate sessions. They were asked to rate the drinks on a scale ranging from – 100 (*dislike very much*) through 0 (*neutral*) to 100 (*like very much*). Researchers wanted to reduce binge drinking in teenagers, so they hoped that pairing negative imagery with alcoholic beverages would lower these ratings[^5].
+
+When the data set is big, it is useful to have a general idea of what it contains (tip: use the function ```glimpse```).
 
 ## Filtering
 
-Looking at the data, you can see that the ratings of participant #99 are a bit strange... perhaps there was a technical problem, i.e., the rating scale was out of the -100/100 range.   
+Looking at the data, two things stand out: 
+
+1. participant #98 contains missing values (**NA**)
+2. data of participant #99 are implausible, perhaps due to technical problems (e.g., the rating scale was out of the -100/100 range)  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+you can see that the ratings of participant #99 are a bit strange... perhaps there was a technical problem, i.e., the rating scale was out of the -100/100 range.   
    
 Let's filter this participant out. More specifically, we keep all participants that are **not** participant #99.
 
 ```{r filter}
-att.filter <-
+
+att_filter <-
   att %>%
   filter(ssj != 99)
-```
 
-Verify that it worked.
-
-```{r filter_output, cols.print = 11, rows.print = 21}
-att.filter
 ```
 
 The symbol **```%>%```** is the **pipe operator** , which allows to serially concatenate functions applied to the same data frame. Read it as _**"and then"**_. In the example below, we called the data frame ```att``` **and then** applied the ```filter``` function to discard participant #99.
 
+How to verify that the filtering worked? You could click on  ```att``` in the *Environment* window and look for participant #99, but it can be tedious with big data sets. An easy and flexible way is to check if the filtered data set still contains participant #99:
+
+```{r filter_verify}
+
+att_filter %>%
+  filter(ssj == 99)
+
+```
+
+The tibble is empty, confirming the deletion.
+
 ## Variable selection
 
-For the exercises in this course, we will only need a subset of variables in this dataset.   
+For the exercises in this course, we will only need a subset of variables in this data set.   
    
-Researchers were interested in reducing binge drinking, so we will focus our attention on **negative** imagery and one alcoholic beverage. We choose **beer**, because we are in Belgium. We also need control conditions, i.e., **neutral** imagery and **water**.
-   
-In the next code, we will simultaneously **select** and **rename** the variables we want to keep.
+Researchers were interested in _reducing_ binge drinking, so we will focus our attention on **negative** imagery and one alcoholic beverage. We choose **beer**. We also need control conditions, i.e., **neutral** imagery and **water**.
 
-```{r select, cols.print = 7}
-att.filter.select <-
-  att.filter %>%
+In the next code snippet, we simultaneously **select** and **rename** the variables we want to keep.
+
+```{r select}
+
+att_filter_select <-
+  att_filter %>%
   select(
     participant = ssj, # new name = old name
     gender,
@@ -189,106 +213,125 @@ att.filter.select <-
     water_neutral = waterneu
   )
 
-head(att.filter.select, n = 5) # show only first 5 rows
+head(att_filter_select, n = 5) # show only first 5 rows
+
 ```
 
 ## Recoding
 
-Let's look at the variable ```gender```:
+Let's inspect the variable ```gender```:
 
 ```{r recode_look}
-att.filter.select$gender
+
+att_filter_select$gender
+
 ```
 
-A string of 1s and 2s. It's easy to get a glimpse of this variable because there are not many observations. When you have more observations, better use ```unique```:
+A string of _1_s and _2_s. It's easy to get a glimpse of this variable because there are not many observations. When you have more observations, better use ```unique```:
 
 ```{r recode_look_unique}
-unique(att.filter.select$gender)
+
+unique(att_filter_select$gender)
+
 ```
 
 What type of variable is it?
 
 ```{r recode_look_vartype}
-class(att.filter.select$gender)
+
+class(att_filter_select$gender)
+
 ```
 
-Class ```integer``` has only integer values (i.e., no decimals or complex numbers).   
-   
-There are many variable types in **R**. An interesting one is ```factor```, i.e., variables which can have only a limited number of different values... they are basically **categorical** variables. In our case, it would make sense to consider ```gender``` as a ```factor``` with two levels, *male* and *female*. Let's transform it:
+Class ```numeric``` has numeric values (i.e., double precision floating point numbers).
 
-```{r recode, cols.print = 8}
+There are many variable types in **R**. An interesting one is ```factor```, i.e., variables which are assigned specific values (you can think of them as **categorical** variables). In our case, it would make sense to consider ```gender``` as a ```factor``` with two levels, *male* and *female*. Let's transform it:
+
+```{r recode}
+
 # Field et al. do not specify the coding,
 # so we will assume that 1 is female and 2 is male
-att.filter.select.recode <-
-  att.filter.select %>%
-  mutate(sex = recode( # create a new variable 'sex'
-    factor(gender), # convert variable 'gender' as factor
-    "1" = "female", "2" = "male"
-  )) # assign labels to factor levels
+att_filter_select_recode <-
+  att_filter_select %>%
+  mutate( # create new variables in tibble
+    sex = recode( # the new variable 'sex' is a recoding of...
+      factor(gender), # ... variable 'gender', coerced as factor
+      "1" = "female", "2" = "male" # assign labels to factor levels
+    )
+  )
 
-head(att.filter.select.recode, n = 5)
+head(att_filter_select_recode, n = 5)
+
 ```
 
-Now we have two variables with identical information... let's get rid of ```gender```:
+Now we have two variables with redundant information... let's get rid of ```gender```:
 
-```{r recode_noGender, cols.print = 8}
-att.filter.select.recode <- # over-write the previous data frame
-  att.filter.select.recode %>%
+```{r recode_noGender}
+
+att_filter_select_recode <- # over-write the data frame
+  att_filter_select_recode %>%
   select(-gender) # discard unused variables with '-'
 
-head(att.filter.select.recode, n = 5)
+head(att_filter_select_recode, n = 5)
+
 ```
     
-## Converting
+## Pivoting
     
 Data frames can be in **wide** or **long** format:
 
 * **wide** format: **participants** as **rows**, **conditions** as **columns** (e.g., *SPSS*)
 * **long** format: every **row** represents an **observation** belonging to a particular **condition**
 
-Our data are now in wide format. However, the packages we are going to use in this course need data in long format. Let's convert from wide to long:
+Our data are now in wide format. However, the packages we are going to use today need data in long format. Let's convert from wide to long:
 
-```{r convert}
-att.filter.select.recode.long <-
-  att.filter.select.recode %>%
-  gather(
-    key = "condition", # name of new variable with all condition levels
-    value = "ratings", # name of new variable with all values
-    beer_negative:water_neutral
-  ) # variables to be collapsed
+```{r pivot}
 
-head(att.filter.select.recode.long, n = 5)
+att_filter_select_recode_long <-
+  att_filter_select_recode %>%
+  pivot_longer(
+    cols = c(beer_negative, beer_neutral, water_negative, water_neutral), # variables to be stacked
+    names_to = "condition", # name of new variable with all condition levels
+    values_to = "ratings", # name of new variable with all values
+  )
+
+head(att_filter_select_recode_long, n = 5)
+
 ```
 
 The column ```ratings``` contains the values of our dependent variable, whereas ```condition``` contains all our conditions.   
     
-This experiment has two independent variables, **drink** (beer or water) and **imagery** (neutral or negative). In our analysis, we wish to know the *separate* contribution of these two independent variables and their *interaction*.   
-So, we need to separate ```condition``` into 2 variables:
+This experiment has two independent variables, **drink** (beer or water) and **imagery** (neutral or negative). In our analysis, we wish to know the *separate* contribution of these two independent variables and their *interaction*. So, we need to separate ```condition``` into 2 variables:
 
 ```{r separate}
-att.filter.select.recode.long.sep <-
-  att.filter.select.recode.long %>%
-  separate(condition, c("drink", "imagery")) %>% # the separation occurs here
+
+att_filter_select_recode_long_sep <-
+  att_filter_select_recode_long %>%
+  separate(condition, c("drink", "imagery"), # the separation occurs here
+           remove = TRUE) %>%                # remove original variable? 
   # over-write participant, drink, and imagery
-  # and transform them to factors
+  # and convert them to factors
   mutate(
-    participant = factor(participant),
-    drink = factor(drink),
-    imagery = factor(imagery)
+    participant = as_factor(participant),
+    drink = as_factor(drink),
+    imagery = as_factor(imagery)
   )
 
-head(att.filter.select.recode.long.sep, n = 5)
+head(att_filter_select_recode_long_sep, n = 5)
+
 ```
 
 ## Saving
 
-The original data are saved in a *.dat* file. This format is not what the cool kids use. Let's save our processed data as *.csv*.
+The original data are saved in a *.dat* file. Instead, we will save our processed data as *.csv*.
 
 ```{r write_csv}
+
 write_csv(
-  att.filter.select.recode.long.sep,
-  paste0(getwd(), "/data_attitude.csv")
-) # full path & file name
+  att_filter_select_recode_long_sep,
+  here("tidy-data", "data_attitude.csv")
+)
+
 ```
 
 If you want to **read** from *.csv*, use ```read_csv```.
@@ -298,13 +341,21 @@ If you want to **read** from *.csv*, use ```read_csv```.
 Thanks to the versatility of the ```tidyverse``` (especially the pipe operator), all the above operations can be performed in one go:
 
 ```{r all_operations}
-att.filter.select.recode.long.sep <-
-  read.table(
-    here::here("raw-data", "MixedAttitude.dat"),
-    header = TRUE
+
+att_filter_select_recode_long_sep_onego <-
+  # load data
+  read_tsv(here(
+    "raw-data",
+    "MixedAttitude.dat"
+  )) %>%
+  # filter cases
+  filter(
+    .,
+    ssj != 99
   ) %>%
-  filter(ssj != 99) %>%
+  # select and rename variables
   select(
+    .,
     participant = ssj,
     gender,
     beer_negative = beerneg,
@@ -312,28 +363,63 @@ att.filter.select.recode.long.sep <-
     water_negative = waterneg,
     water_neutral = waterneu
   ) %>%
-  mutate(sex = recode(
-    factor(gender),
-    "1" = "female", "2" = "male"
-  )) %>%
-  select(-gender) %>%
-  gather(
-    key = "condition",
-    value = "ratings",
-    beer_negative:water_neutral
-  ) %>%
-  separate(condition, c("drink", "imagery")) %>%
+  # recode variable
   mutate(
-    participant = factor(participant),
-    drink = factor(drink),
-    imagery = factor(imagery)
+    .,
+    sex = recode(
+      factor(gender),
+      "1" = "female", "2" = "male"
+    )
   ) %>%
-  write_csv(
-    ., # the point indicates the current data frame
-    paste0(getwd(), "/data_attitude.csv")
+  # delete variable
+  select(
+    .,
+    -gender
+  ) %>%
+  # pivot
+  pivot_longer(
+    .,
+    cols = c(beer_negative, beer_neutral, water_negative, water_neutral),
+    names_to = "condition",
+    values_to = "ratings",
+  ) %>%
+  # separate variable in two
+  separate(
+    .,
+    condition, c("drink", "imagery"),
+    remove = TRUE
+  ) %>%
+  # convert variables to factors
+  mutate(
+    .,
+    participant = as_factor(participant),
+    drink = as_factor(drink),
+    imagery = as_factor(imagery)
   )
 
-head(att.filter.select.recode.long.sep, n = 5)
+# save to .csv
+# to be done separately, or the conversion to factor will not succeed
+# (i.e., values in 'participant', 'drink', and 'imagery' will be character) 
+write_csv(
+  att_filter_select_recode_long_sep_onego,
+  here("tidy-data", "data_attitude.csv")
+)
+
+
+head(att_filter_select_recode_long_sep, n = 5)
+
+
+
+
+all_equal(att_filter_select_recode_long_sep,
+          att_filter_select_recode_long_sep2)
+
+
+
+
+
+
+
 ```
 
 ## Summary
@@ -366,7 +452,7 @@ Do the following operations _**in one go**_:
 * convert ```gender``` to a **categorical** variable with 2 levels:
     - 1 --> female
     - 2 --> male
-* eliminate from the dataset the following variables: ```beerpos```, ```beerneg```, ```beerneut```, ```winepos```, ```waterpos```
+* eliminate from the data set the following variables: ```beerpos```, ```beerneg```, ```beerneut```, ```winepos```, ```waterpos```
 * using the function ```rename```, rename the variables you kept:
     - ssj --> participant
     - wineneg --> wine_negative
@@ -374,14 +460,14 @@ Do the following operations _**in one go**_:
     - waterneg --> water_negative
     - waterneu --> water_neutral
 * filter out all participants who rated water preceded by neutral imagery as _**lower than -10**_
-* convert the dataset to **long** format
+* convert the data set to **long** format
 * separate conditions into 2 variables (**drink** and **imagery**) and convert them to factors
-* save the dataset as ```data_attitude_exercise.csv```
+* save the data set as ```data_attitude_exercise.csv```
 * separately for **drink**, **imagery**, and **gender**, calculate the following summary statistics:
     - number of observations
     - median
     - median absolute deviation
-    - minumum value
+    - minimum value
     - maximum value
 * display the results in console
 
@@ -396,7 +482,7 @@ Do the following operations _**in one go**_:
 
 Plotting is one of the most satisfying things to do in **R**, especially if you use the package ```ggplot2```... part of the ```tidyverse```!   
    
-In a nutshell, ```ggplot2``` allows you to build plots iteratively using a series of layers. You start with a **dataset** and specify its **aesthetics** (e.g., which variable should be represented on the x-axis?). Later, you can add layers with annotations, statistical summaries, and so on.
+In a nutshell, ```ggplot2``` allows you to build plots iteratively using a series of layers. You start with a **data set** and specify its **aesthetics** (e.g., which variable should be represented on the x-axis?). Later, you can add layers with annotations, statistical summaries, and so on.
 
 ## Bar plot
 
@@ -882,7 +968,7 @@ summary.att.bootES
 
 ## Exercise 3.1
 
-Run the same analyses using the exercise dataset (i.e., wine instead of beer):
+Run the same analyses using the exercise data set (i.e., wine instead of beer):
 
 * 2 (**drink**) x 2 (**imagery**) repeated measures ANOVA on likeness ratings
 * paired contrasts
@@ -931,8 +1017,22 @@ Hopefully, I managed to give you a glimpse of the versatility, readability, and 
 
 [^2]: As you may imagine, today we won't have time to cover all the amazing things you can do with these packages. Also, they are a gift that keeps on giving: I have been using them for a while and I keep discovering useful functions. If you want to learn more, read [R for Data Science](http://r4ds.had.co.nz/) by [Garrett Grolemund](https://www.oreilly.com/pub/au/5570) and [Hadley Wickham](http://hadley.nz/).
 
-[^3]: This is a modified version of a dataset included in the book [Discovering Statistics Using R (Field, Miles & Field, 2012)](https://www.discoveringstatistics.com/books/discovering-statistics-using-r/).
+[^3]: It is good to know where your packages are. Type ```.libPaths()``` in the RStudio console to find out.
 
-[^4]: If you prefer **not** to bootstrap your effect sizes, you can use the ```MBESS``` package (a useful tutorial can be found [here](http://osc.centerforopenscience.org/2014/03/06/confidence%20intervals/)). If you want to do it in **SPSS**, see [here](https://daniellakens.blogspot.be/2014/06/calculating-confidence-intervals-for.html).
+[^4]: When you have no idea where to start, [Google](https://www.google.com/) (or its privacy-friendly alternative [StartPage](https://www.startpage.com/)) and [StackOverflow](https://stackoverflow.com/) are your friends!
 
-[^5]: A clear explanation of how to use ```bootES``` is provided by the authors of the package in their [paper](https://link.springer.com/article/10.3758/s13428-013-0330-5).
+[^5]: This is a modified version of a data set included in the book [Discovering Statistics Using R (Field, Miles & Field, 2012)](https://www.discoveringstatistics.com/books/discovering-statistics-using-r/).
+
+
+
+
+
+
+
+
+
+
+
+[^98]: If you prefer **not** to bootstrap your effect sizes, you can use the ```MBESS``` package (a useful tutorial can be found [here](http://osc.centerforopenscience.org/2014/03/06/confidence%20intervals/)). If you want to do it in **SPSS**, see [here](https://daniellakens.blogspot.be/2014/06/calculating-confidence-intervals-for.html).
+
+[^99]: A clear explanation of how to use ```bootES``` is provided by the authors of the package in their [paper](https://link.springer.com/article/10.3758/s13428-013-0330-5).

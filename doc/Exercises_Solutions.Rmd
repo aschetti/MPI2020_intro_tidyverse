@@ -1,15 +1,107 @@
 ---
-title: "Untitled"
-output: html_document
+title: '<center> <h1> A taste of data science using R and the ```tidyverse``` -- Solutions </h1> </center>'
+author: '[Antonio Schettino](https://asch3tti.netlify.com/ "Antonio Schettino")'
+date: 'January 15th, 2020'
+output:
+  html_document:
+    df_print: paged
+    theme: spacelab
+    highlight: tango
+    code_folding: show
+    toc: true
+    toc_float: true
+    includes:
+      after_body: footer.html
+editor_options: 
+  chunk_output_type: console
 ---
+
+```{r setup}
+
+library(here)
+library(tidyverse)
+
+```
 
 # Solutions
 
 ## Exercise 1
 
-```{r install_load_tidyverse, eval = FALSE, results = 'hide'}
+```{r install_load_tidyverse, eval = FALSE}
 
 install.packages("tidyverse")
 library(tidyverse)
 
 ```
+
+## Exercise 2
+
+```{r exercise_2}
+
+data_attitude_wine <-
+  read_csv(
+    here(
+      "raw-data",
+      "MixedAttitude.dat"
+    )
+  ) %>%
+  mutate(
+    gender = recode(
+      factor(sex),
+      "1" = "female", "2" = "male"
+    )
+  ) %>%
+  select(-c(
+    sex,
+    beerpos,
+    beerneg,
+    beerneut,
+    winepos,
+    waterpos)) %>%
+  rename(participant = ssj,
+         wine_negative = wineneg,
+         wine_neutral = wineneut,
+         water_negative = waterneg,
+         water_neutral = waterneu) %>%
+  filter(
+    water_neutral >= -100 & water_neutral <= +100 &
+      water_neutral >= -10
+  ) %>%
+  pivot_longer(
+    cols = c(wine_negative, wine_neutral, water_negative, water_neutral),
+    names_to = "condition",
+    values_to = "ratings",
+  ) %>%
+   separate(
+    condition, c("drink", "imagery"),
+    remove = TRUE
+  ) %>%
+    mutate(
+    participant = as_factor(participant),
+    gender = as_factor(gender),
+    drink = as_factor(drink),
+    imagery = as_factor(imagery)
+  )
+
+write_csv(
+  data_attitude_wine,
+  here("tidy-data", "data_attitude_wine.csv")
+)
+
+summary_data_attitude_wine <-
+data_attitude_wine %>%
+    group_by(gender, drink, imagery) %>%
+    summarize(n = n(),
+              median = median(ratings),
+              mad = mad(ratings),
+              min = min(ratings),
+              max = max(ratings)) %>%
+    print()
+
+```
+
+
+
+
+
+

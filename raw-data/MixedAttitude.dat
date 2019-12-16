@@ -1,4 +1,4 @@
-ssj,gender,beerpos,beerneg,beerneut,winepos,wineneg,wineneut,waterpos,waterneg,waterneu
+ssj,sex,beerpos,beerneg,beerneut,winepos,wineneg,wineneut,waterpos,waterneg,waterneu
 1,1,1,6,5,38,-5,4,10,-14,-2
 2,1,43,30,8,20,-12,4,9,-10,-13
 3,1,15,15,12,20,-15,6,6,-16,1
@@ -19,5 +19,5 @@ ssj,gender,beerpos,beerneg,beerneut,winepos,wineneg,wineneut,waterpos,waterneg,w
 18,2,9,-12,-5,24,-15,18,17,-4,8
 19,2,14,-11,7,34,-14,20,19,-1,12
 20,2,15,-6,13,23,-15,15,29,-1,10
-98,2,16,-4,10,32,-12,7,NA,NA,NA
-99,1,-200,-500,-300,-478,-354,-478,-125,-999,-455
+98,1,-200,-500,-300,-478,-354,-478,-125,-999,-455
+99,2,16,-4,10,32,-12,7,NA,NA,NA

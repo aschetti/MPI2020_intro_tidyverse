@@ -109,30 +109,29 @@ Yes, the file **`r list.files(here("raw-data"))`** is what we are going to play 
 
 Install and load the ```tidyverse```.
 
-```{r install_load_tidyverse}
+```{r exercise_1}
 
-################################################
-############### INSERT CODE HERE ###############
-################################################
+# INSERT CODE HERE
 
 ```
 
 # Data manipulation
 
-The data are in *.dat* format... how can we load them?[^4] The function ```read_tsv``` from the ```readr``` package (part of the ```tidyverse```) can load this kind of tab-separated files:
+The data are in *.dat* format... how can we load them?[^4] The function ```read_csv``` from the ```readr``` package (part of the ```tidyverse```) can load this kind of tab-separated files:
 
 ```{r load_data}
 
-att <- read_tsv(here(
-  "raw-data",
-  "MixedAttitude.dat"
-))
+att <- read_csv(
+  here(
+    "raw-data",
+    "MixedAttitude.dat"
+  ))
 
 ```
 
-For additional details on the arguments of this function, type ```?read_tsv``` in the console.
+For additional details on the arguments of this function, type ```?read_csv``` in the console.
 
-Now the data are in a ```tibble```, the equivalent of a ```data.frame``` in the ```tidyverse```. Type ```att``` (the name of the data set in our environment) in the console to see the first lines.
+Now the data are in a ```tibble```, the equivalent of a ```data.frame``` in the ```tidyverse```. Type ```att``` (the name of the data set in our environment) in the console to see the first cases.
 
 ```{r show_data}
 
@@ -142,59 +141,85 @@ att
 
 To see the full data set, click on ```att``` in the *Environment* window (by default on the upper right corner). 
 
-These are the data of `r length(unique(att$ssj))` participants who saw **neutral**, **positive**, or **negative** advertisement of **beer**, **wine**, and **water** in 3 separate sessions. They were asked to rate the drinks on a scale ranging from – 100 (*dislike very much*) through 0 (*neutral*) to 100 (*like very much*). Researchers wanted to reduce binge drinking in teenagers, so they hoped that pairing negative imagery with alcoholic beverages would lower these ratings[^5].
+These are the data of `r length(unique(att$ssj))` participants who saw **neutral**, **positive**, or **negative** advertisement of **beer**, **wine**, and **water** in 3 separate sessions. They were asked to rate the drinks on a scale ranging from –100 (*dislike very much*) through 0 (*neutral*) to +100 (*like very much*). Researchers wanted to reduce binge drinking in teenagers, so they hoped that pairing negative imagery with alcoholic beverages would lower these ratings[^5].
 
-When the data set is big, it is useful to have a general idea of what it contains (tip: use the function ```glimpse```).
+When the data set is big, it is useful to have a general idea of what it contains (_tip_: use the function ```glimpse```).
 
 ## Filtering
 
 Looking at the data, two things stand out: 
 
-1. participant #98 contains missing values (**NA**)
-2. data of participant #99 are implausible, perhaps due to technical problems (e.g., the rating scale was out of the -100/100 range)  
+1. data of participant #98 are implausible, perhaps due to technical problems (e.g., the rating scale was out of the -100/100 range)  
+2. data of participant #99 contains missing values (**NA**)
 
+We need to eliminate these two participants from the data. Let's start from participant #98.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-you can see that the ratings of participant #99 are a bit strange... perhaps there was a technical problem, i.e., the rating scale was out of the -100/100 range.   
-   
-Let's filter this participant out. More specifically, we keep all participants that are **not** participant #99.
-
-```{r filter}
+```{r filter_ssj}
 
 att_filter <-
   att %>%
-  filter(ssj != 99)
+  filter(ssj != 98)
 
 ```
 
-The symbol **```%>%```** is the **pipe operator** , which allows to serially concatenate functions applied to the same data frame. Read it as _**"and then"**_. In the example below, we called the data frame ```att``` **and then** applied the ```filter``` function to discard participant #99.
+Here we keep all participants that are **not** participant #98 (```!=``` operator). The symbol **```%>%```** is the **pipe operator** , which allows to serially concatenate functions applied to the same data frame. Read it as _**"and then"**_. In the example above, we called the data frame ```att``` **and then** applied the ```filter``` function to discard participant #98.
 
-How to verify that the filtering worked? You could click on  ```att``` in the *Environment* window and look for participant #99, but it can be tedious with big data sets. An easy and flexible way is to check if the filtered data set still contains participant #99:
+How to verify that the filtering worked? You could click on  ```att``` in the *Environment* window and look for participant #98, but it can be tedious with big data sets. An easy and flexible way is to check if the filtered data set still contains participant #98:
 
 ```{r filter_verify}
 
 att_filter %>%
-  filter(ssj == 99)
+  filter(ssj == 98)
 
 ```
 
 The tibble is empty, confirming the deletion.
 
+Now let's think of participant #99.
+
+```{r filter_NAs}
+
+att_filter <-
+  att_filter %>%
+  filter(!is.na(waterneu))
+
+```
+
+The code above allows us to keep all rows whose values of the variable ```waterneu``` are **not** _NAs_. Did it work?
+
+```{r filter_NAs_verify}
+
+att_filter %>%
+  filter(ssj == 98)
+
+```
+
+It worked! We could also apply both filters simultaneously using the ```&``` operator:
+
+```{r filter_both}
+
+att_filter <-
+  att %>%
+  filter(ssj != 98 &
+    !is.na(waterneu))
+
+```
+
+However, with large data sets, it is unfeasible to visually check _all_ values of _all_ variables of _all_ participants to see if something went wrong during data collection. A better strategy is to use the knowledge we already have about the experimental design. In this case, we know that ratings were collected via scales ranging from -100 to +100, so anything below -100 or above +100 should not be analyzed. Here we decide to only keep participants whose values of the variable ```waterneu``` are within the aforementioned range:
+
+```{r filter_values}
+
+att_filter <-
+  att %>%
+  filter(waterneu >= -100 & waterneu <= +100)
+
+```
+
+This strategy allows us to _simultaneously_ get rid of both participant #98 and #99.
+
 ## Variable selection
 
-For the exercises in this course, we will only need a subset of variables in this data set.   
+For today's exercises, we will only need a subset of variables in this data set.   
    
 Researchers were interested in _reducing_ binge drinking, so we will focus our attention on **negative** imagery and one alcoholic beverage. We choose **beer**. We also need control conditions, i.e., **neutral** imagery and **water**.
 
@@ -206,7 +231,7 @@ att_filter_select <-
   att_filter %>%
   select(
     participant = ssj, # new name = old name
-    gender,
+    sex,
     beer_negative = beerneg,
     beer_neutral = beerneut,
     water_negative = waterneg,
@@ -219,11 +244,11 @@ head(att_filter_select, n = 5) # show only first 5 rows
 
 ## Recoding
 
-Let's inspect the variable ```gender```:
+Let's inspect the variable ```sex```:
 
 ```{r recode_look}
 
-att_filter_select$gender
+att_filter_select$sex
 
 ```
 
@@ -231,7 +256,7 @@ A string of _1_s and _2_s. It's easy to get a glimpse of this variable because t
 
 ```{r recode_look_unique}
 
-unique(att_filter_select$gender)
+unique(att_filter_select$sex)
 
 ```
 
@@ -239,13 +264,13 @@ What type of variable is it?
 
 ```{r recode_look_vartype}
 
-class(att_filter_select$gender)
+class(att_filter_select$sex)
 
 ```
 
 Class ```numeric``` has numeric values (i.e., double precision floating point numbers).
 
-There are many variable types in **R**. An interesting one is ```factor```, i.e., variables which are assigned specific values (you can think of them as **categorical** variables). In our case, it would make sense to consider ```gender``` as a ```factor``` with two levels, *male* and *female*. Let's transform it:
+There are many variable types in **R**. An interesting one is ```factor```, i.e., **categorical** variables. In our case, it would make sense to consider ```sex``` as a ```factor``` with two levels, *male* and *female*. Let's transform it:
 
 ```{r recode}
 
@@ -253,9 +278,9 @@ There are many variable types in **R**. An interesting one is ```factor```, i.e.
 # so we will assume that 1 is female and 2 is male
 att_filter_select_recode <-
   att_filter_select %>%
-  mutate( # create new variables in tibble
-    sex = recode( # the new variable 'sex' is a recoding of...
-      factor(gender), # ... variable 'gender', coerced as factor
+  mutate( # create new variables
+    gender = recode( # the new variable 'gender' is a recoding of...
+      factor(sex), # ... variable 'sex', coerced as factor
       "1" = "female", "2" = "male" # assign labels to factor levels
     )
   )
@@ -264,13 +289,13 @@ head(att_filter_select_recode, n = 5)
 
 ```
 
-Now we have two variables with redundant information... let's get rid of ```gender```:
+Now we have two variables with redundant information... let's get rid of ```sex```:
 
 ```{r recode_noGender}
 
-att_filter_select_recode <- # over-write the data frame
+att_filter_select_recode <-
   att_filter_select_recode %>%
-  select(-gender) # discard unused variables with '-'
+  select(-sex) # discard unused variables with '-'
 
 head(att_filter_select_recode, n = 5)
 
@@ -301,16 +326,16 @@ head(att_filter_select_recode_long, n = 5)
 
 The column ```ratings``` contains the values of our dependent variable, whereas ```condition``` contains all our conditions.   
     
-This experiment has two independent variables, **drink** (beer or water) and **imagery** (neutral or negative). In our analysis, we wish to know the *separate* contribution of these two independent variables and their *interaction*. So, we need to separate ```condition``` into 2 variables:
+This experiment has two independent variables, **drink** (beer or water) and **imagery** (neutral or negative). In our analysis, we wish to know the *separate* contribution of these two independent variables as well as their *interaction*. So, we need to separate ```condition``` into 2 variables:
 
 ```{r separate}
 
 att_filter_select_recode_long_sep <-
   att_filter_select_recode_long %>%
-  separate(condition, c("drink", "imagery"), # the separation occurs here
-           remove = TRUE) %>%                # remove original variable? 
+  separate(condition, c("drink", "imagery"), # separate 'condition' into 'drink' and 'imagery'
+           remove = TRUE) %>%                # remove original variable
   # over-write participant, drink, and imagery
-  # and convert them to factors
+  # in order to convert them to factors
   mutate(
     participant = as_factor(participant),
     drink = as_factor(drink),
@@ -334,8 +359,6 @@ write_csv(
 
 ```
 
-If you want to **read** from *.csv*, use ```read_csv```.
-
 ## Concatenate operations
 
 Thanks to the versatility of the ```tidyverse``` (especially the pipe operator), all the above operations can be performed in one go:
@@ -344,20 +367,22 @@ Thanks to the versatility of the ```tidyverse``` (especially the pipe operator),
 
 att_filter_select_recode_long_sep_onego <-
   # load data
-  read_tsv(here(
-    "raw-data",
-    "MixedAttitude.dat"
-  )) %>%
+  read_csv(
+    here(
+      "raw-data",
+      "MixedAttitude.dat"
+    )
+  ) %>%
   # filter cases
   filter(
     .,
-    ssj != 99
+    waterneu >= -100 & waterneu <= +100
   ) %>%
   # select and rename variables
   select(
     .,
     participant = ssj,
-    gender,
+    sex,
     beer_negative = beerneg,
     beer_neutral = beerneut,
     water_negative = waterneg,
@@ -365,16 +390,15 @@ att_filter_select_recode_long_sep_onego <-
   ) %>%
   # recode variable
   mutate(
-    .,
-    sex = recode(
-      factor(gender),
+    gender = recode(
+      factor(sex),
       "1" = "female", "2" = "male"
     )
   ) %>%
   # delete variable
   select(
     .,
-    -gender
+    -sex
   ) %>%
   # pivot
   pivot_longer(
@@ -384,8 +408,7 @@ att_filter_select_recode_long_sep_onego <-
     values_to = "ratings",
   ) %>%
   # separate variable in two
-  separate(
-    .,
+  separate(.,
     condition, c("drink", "imagery"),
     remove = TRUE
   ) %>%
@@ -399,36 +422,33 @@ att_filter_select_recode_long_sep_onego <-
 
 # save to .csv
 # to be done separately, or the conversion to factor will not succeed
-# (i.e., values in 'participant', 'drink', and 'imagery' will be character) 
+# (i.e., values in 'participant', 'drink', and 'imagery' will still be characters)
 write_csv(
   att_filter_select_recode_long_sep_onego,
-  here("tidy-data", "data_attitude.csv")
+  here("tidy-data", "data_attitude_onego.csv")
 )
 
+head(att_filter_select_recode_long_sep_onego, n = 5)
 
-head(att_filter_select_recode_long_sep, n = 5)
+```
 
+Are the two data sets really identical?
 
-
+```{r compare_datasets}
 
 all_equal(att_filter_select_recode_long_sep,
-          att_filter_select_recode_long_sep2)
-
-
-
-
-
-
+          att_filter_select_recode_long_sep_onego)
 
 ```
 
 ## Summary
 
-It is often required to provide summary statistics of the data. How to do it with ```tidyverse```?
+It is often required to provide summary statistics of the data. How to do it in ```tidyverse``` lingo?
 
-```{r summary}
-summary.att.filter.select.recode.long.sep <-
-  att.filter.select.recode.long.sep %>%
+```{r data_summary}
+
+summary_att_filter_select_recode_long_sep <-
+  att_filter_select_recode_long_sep %>%
   group_by(drink, imagery) %>% # group according to conditions
   summarize(
     n = n(), # number of observations
@@ -436,34 +456,33 @@ summary.att.filter.select.recode.long.sep <-
     sd = sd(ratings), # standard deviation
     sem = sd / sqrt(n), # standard error of the mean
     min = min(ratings), # range (min)
-    max = max(ratings), # range (max)
-    ci.95 = 1.96 * sem
-  ) %>% # 95% confidence interval
-  print(.) # another way of displaying the results in console
+    max = max(ratings) # range (max)
+  ) %>%
+  print() # another way of displaying the results in console
+
 ```
 
-# Exercises
-
-## Exercise 1
+## Exercise 2
 
 Do the following operations _**in one go**_:
 
 * load the original data (```MixedAttitude.dat```)
-* convert ```gender``` to a **categorical** variable with 2 levels:
+* convert ```sex``` to a **categorical** variable (named ```gender```) with 2 levels:
     - 1 --> female
     - 2 --> male
-* eliminate from the data set the following variables: ```beerpos```, ```beerneg```, ```beerneut```, ```winepos```, ```waterpos```
+* eliminate from the data set the following variables: ```sex```, ```beerpos```, ```beerneg```, ```beerneut```, ```winepos```, and ```waterpos```
 * using the function ```rename```, rename the variables you kept:
     - ssj --> participant
     - wineneg --> wine_negative
     - wineneut --> wine_neutral
     - waterneg --> water_negative
     - waterneu --> water_neutral
-* filter out all participants who rated water preceded by neutral imagery as _**lower than -10**_
+* filter out outlier participants as well as all participants who rated _water_ during display of _neutral_ imagery as _**lower than -10**_
 * convert the data set to **long** format
-* separate conditions into 2 variables (**drink** and **imagery**) and convert them to factors
-* save the data set as ```data_attitude_exercise.csv```
-* separately for **drink**, **imagery**, and **gender**, calculate the following summary statistics:
+* separate conditions into 2 variables (```drink``` and ```imagery```)
+* convert ```participant```, ```gender```, ```drink```, and ```imagery``` to factors
+* save the data set as ```data_attitude_wine.csv``` in the subfolder ```tidy-data```
+* separately for ```gender```, ```drink```, and ```imagery```, calculate the following summary statistics:
     - number of observations
     - median
     - median absolute deviation
@@ -471,11 +490,10 @@ Do the following operations _**in one go**_:
     - maximum value
 * display the results in console
 
-```{r exercise_1}
+```{r exercise_2}
 
-################################################
-############### INSERT CODE HERE ###############
-################################################
+# INSERT CODE HERE
+
 ```
 
 # Plotting

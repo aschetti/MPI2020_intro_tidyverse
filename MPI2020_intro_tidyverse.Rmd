@@ -20,6 +20,9 @@ editor_options:
 
 library(here)
 library(tidyverse)
+library(emo)
+library(viridis)
+library(ggpirate)
 
 ```
 
@@ -143,14 +146,14 @@ To see the full data set, click on ```att``` in the *Environment* window (by def
 
 These are the data of `r length(unique(att$ssj))` participants who saw **neutral**, **positive**, or **negative** advertisement of **beer**, **wine**, and **water** in 3 separate sessions. They were asked to rate the drinks on a scale ranging from –100 (*dislike very much*) through 0 (*neutral*) to +100 (*like very much*). Researchers wanted to reduce binge drinking in teenagers, so they hoped that pairing negative imagery with alcoholic beverages would lower these ratings[^5].
 
-When the data set is big, it is useful to have a general idea of what it contains (_tip_: use the function ```glimpse```).
+When the data set is big, it is useful to have a general idea of what it contains (**tip**: use the function ```glimpse```).
 
 ## Filtering
 
 Looking at the data, two things stand out: 
 
 1. data of participant #98 are implausible, perhaps due to technical problems (e.g., the rating scale was out of the -100/100 range)  
-2. data of participant #99 contains missing values (**NA**)
+2. data of participant #99 contains missing values (_**NA**_)
 
 We need to eliminate these two participants from the data. Let's start from participant #98.
 
@@ -194,7 +197,7 @@ att_filter %>%
 
 ```
 
-It worked! We could also apply both filters simultaneously using the ```&``` operator:
+It worked! We could also apply both filters simultaneously using the ```&``` (AND) operator:
 
 ```{r filter_both}
 
@@ -216,6 +219,13 @@ att_filter <-
 ```
 
 This strategy allows us to _simultaneously_ get rid of both participant #98 and #99.
+
+```{r filter_values_verify}
+
+att_filter %>%
+  filter(ssj == 98 | ssj == 99) # check out the '|' (OR) operator
+
+```
 
 ## Variable selection
 
@@ -291,7 +301,7 @@ head(att_filter_select_recode, n = 5)
 
 Now we have two variables with redundant information... let's get rid of ```sex```:
 
-```{r recode_noGender}
+```{r recode_noSex}
 
 att_filter_select_recode <-
   att_filter_select_recode %>%
@@ -324,16 +334,16 @@ head(att_filter_select_recode_long, n = 5)
 
 ```
 
-The column ```ratings``` contains the values of our dependent variable, whereas ```condition``` contains all our conditions.   
-    
-This experiment has two independent variables, **drink** (beer or water) and **imagery** (neutral or negative). In our analysis, we wish to know the *separate* contribution of these two independent variables as well as their *interaction*. So, we need to separate ```condition``` into 2 variables:
+The column ```ratings``` contains the values of our dependent variable, whereas ```condition``` contains all our conditions.
+
+This experiment has two independent variables, **drink** and **imagery**. In our analysis, we wish to know the *separate* contribution of these two independent variables as well as their *interaction*. So, we need to separate the variable ```condition``` into 2 columns:
 
 ```{r separate}
 
 att_filter_select_recode_long_sep <-
   att_filter_select_recode_long %>%
   separate(condition, c("drink", "imagery"), # separate 'condition' into 'drink' and 'imagery'
-           remove = TRUE) %>%                # remove original variable
+           remove = TRUE) %>%                # remove original column
   # over-write participant, drink, and imagery
   # in order to convert them to factors
   mutate(
@@ -432,7 +442,7 @@ head(att_filter_select_recode_long_sep_onego, n = 5)
 
 ```
 
-Are the two data sets really identical?
+Are the two data sets really identical? Verify with the ```all_equal``` function:
 
 ```{r compare_datasets}
 
@@ -443,7 +453,7 @@ all_equal(att_filter_select_recode_long_sep,
 
 ## Summary
 
-It is often required to provide summary statistics of the data. How to do it in ```tidyverse``` lingo?
+It is often required to provide summary statistics of the data. How to do it in ```tidyverse```?
 
 ```{r data_summary}
 
@@ -458,6 +468,7 @@ summary_att_filter_select_recode_long_sep <-
     min = min(ratings), # range (min)
     max = max(ratings) # range (max)
   ) %>%
+  ungroup() %>% # better ungroup,to avoid possible conflicts later on
   print() # another way of displaying the results in console
 
 ```
@@ -477,7 +488,7 @@ Do the following operations _**in one go**_:
     - wineneut --> wine_neutral
     - waterneg --> water_negative
     - waterneu --> water_neutral
-* filter out outlier participants as well as all participants who rated _water_ during display of _neutral_ imagery as _**lower than -10**_
+* filter out outlier participants as well as all participants who rated _water_ after _neutral_ imagery as _**lower than -10**_
 * convert the data set to **long** format
 * separate conditions into 2 variables (```drink``` and ```imagery```)
 * convert ```participant```, ```gender```, ```drink```, and ```imagery``` to factors
@@ -502,24 +513,91 @@ Plotting is one of the most satisfying things to do in **R**, especially if you 
 
 Last week you already followed the course of Prof. [Mine Çetinkaya-Rundel](http://www2.stat.duke.edu/~mc301/) on how to create beautiful visualizations with ```ggplot2```. I cannot possibly add anything more than what she already taught you. Here we will simply go through one of my preferred visualizations: **RDI** plots.
 
-RDI plots display **R**aw data, **D**escriptives, and **I**nferential statistics altogether. Nothing is hidden by useless bars, everything is shown so that readers can make up their minds. For example, the violin plot below shows:
+RDI plots display **R**aw data, **D**escriptives, and **I**nferential statistics altogether. Nothing is hidden by useless bars, everything is shown so that readers can make up their minds. For example, the violin plot[^6] below shows:
 
-* points representing the raw data
+* points: individual data
+* vertical bars: means
+* boxes: 95% confidence intervals (assuming a normal sampling distribution)
 * smoothed densities
-* box and whisker plot:
-    - vertical bars: medians
-    - boxes: upper and lower quartiles
-    - whiskers: minimum and maximum values
 
+![](figures/plot.png)
 
+To build it, we need to install a couple more packages:
 
+* ```viridis```, which includes colorblind-friendly color palettes
+* ```ggpirate```, which provides handy functions to create violin plots
 
-```{r}
+```{r install_plot_packages, eval = FALSE}
 
-# HERE ONLY DISPLAY FINAL GRAPH, 
-# BELOW SHOW CODE
+install.packages("viridis")
+devtools::install_github("mikabr/ggpirate", dependencies = TRUE)
 
 ```
+
+As you can see, we installed ```ggpirate``` in a different way: we used the function ```install_github``` from the package ```devtools```. That's because ```ggpirate``` is on [**GitHub**](https://github.com/mikabr/ggpirate) but not on [**CRAN**](https://cran.r-project.org/), the official repository for R packages.
+
+Don't forget to load these newly installed packages `r emo::ji("wink")`
+
+```{r load_plot_packages}
+
+library(viridis)
+library(ggpirate)
+
+```
+
+Here is the code for the plot
+
+```{r plot, results = 'hide'}
+
+att_filter_select_recode_long_sep %>%
+  ggplot(aes(
+    x = imagery,
+    y = ratings,
+    color = drink,
+    fill = drink
+  )) +
+  geom_pirate(
+    bars = FALSE,
+    cis = TRUE,
+    lines = TRUE, lines_params = list(color = "black"),
+    points = TRUE, points_params = list(shape = 21, color = "black", size = 5, alpha = .4),
+    violins = TRUE, violins_params = list(size = 1),
+    show.legend = TRUE
+  ) +
+  scale_y_continuous(
+    limits = c(-100, 100),
+    breaks = seq(-100, 100, 10)
+  ) +
+  coord_cartesian(ylim = c(-40, 40)) +
+  geom_hline(
+    yintercept = seq(-100, 100, 10),
+    linetype = "dotted",
+    colour = "#999999",
+    size = .8,
+    alpha = .5
+  ) +
+  scale_fill_viridis( # color palette for all fills
+    option = "viridis",
+    discrete = TRUE
+  ) +
+  scale_color_viridis( # color palette for all outlines
+    option = "viridis",
+    discrete = TRUE
+  ) +
+  ggtitle("Plot") + # plot title
+  theme_minimal(base_size = 18) + # a good basis for a personalized theme plot
+  theme(
+    panel.grid = element_blank(), # plot background
+    legend.box.background = element_rect(color = "transparent"), # legend box background
+    legend.position = c(.9, .9), # legend position
+    plot.title = element_text(size = 26, hjust = .5) # resize and center title
+  )
+
+```
+
+
+
+
 
 
 
@@ -885,7 +963,7 @@ Hopefully, I managed to give you a glimpse of the versatility, readability, and 
 
 [^5]: This is a modified version of a data set included in the book [Discovering Statistics Using R (Field, Miles & Field, 2012)](https://www.discoveringstatistics.com/books/discovering-statistics-using-r/).
 
-
+[^6]: These RDI plots are sometimes called **pirateplots**, in honor of Nathaniel D. Phillips's book [YaRrr! The Pirate’s Guide to R](https://bookdown.org/ndphillips/YaRrr/).
 
 
 

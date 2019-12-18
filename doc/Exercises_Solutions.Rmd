@@ -16,16 +16,19 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r setup}
+```{r setup, include = FALSE}
 
 library(here)
 library(tidyverse)
+library(yarrr)
 
 ```
 
 # Solutions
 
 ## Exercise 1
+
+Install and load the ```tidyverse```.
 
 ```{r install_load_tidyverse, eval = FALSE}
 
@@ -35,6 +38,32 @@ library(tidyverse)
 ```
 
 ## Exercise 2
+
+Do the following operations _**in one go**_:
+
+* load the original data (```MixedAttitude.dat```)
+* convert ```sex``` to a **categorical** variable (named ```gender```) with 2 levels:
+    - 1 --> female
+    - 2 --> male
+* eliminate from the data set the following variables: ```sex```, ```beerpos```, ```beerneg```, ```beerneut```, ```winepos```, and ```waterpos```
+* using the function ```rename```, rename the variables you kept:
+    - ssj --> participant
+    - wineneg --> wine_negative
+    - wineneut --> wine_neutral
+    - waterneg --> water_negative
+    - waterneu --> water_neutral
+* filter out outlier participants as well as all participants who rated _water_ after _neutral_ imagery as _**lower than -10**_
+* convert the data set to **long** format
+* separate conditions into 2 variables (```drink``` and ```imagery```)
+* convert ```participant```, ```gender```, ```drink```, and ```imagery``` to factors
+* save the data set as ```data_attitude_wine.csv``` in the subfolder ```tidy-data```
+* separately for ```gender```, ```drink```, and ```imagery```, calculate the following summary statistics:
+    - number of observations
+    - median
+    - median absolute deviation
+    - minimum value
+    - maximum value
+* display the results in console
 
 ```{r exercise_2}
 
@@ -99,6 +128,105 @@ data_attitude_wine %>%
     print()
 
 ```
+
+## Exercise 3
+
+Load ```data_attitude_wine.csv```.
+
+```{r exercise_3_0}
+
+data_attitude_wine <-
+  read_csv(
+    here(
+      "tidy-data",
+      "data_attitude_wine.csv"
+    )
+  )
+
+```
+
+1. create a plot similar to what is shown above (with ```wine``` instead of ```beer```) and save it in the subfolder ```figures```
+
+```{r exercise_3_1}
+
+RDIplot_1 <-
+  data_attitude_wine %>%
+  ggplot(aes(
+    x = imagery,
+    y = ratings,
+    color = drink,
+    fill = drink
+  )) +
+  geom_pirate(
+    bars = FALSE,
+    cis = TRUE,
+    lines = TRUE, lines_params = list(color = "black"),
+    points = TRUE, points_params = list(shape = 21, color = "black", size = 5, alpha = .4),
+    violins = TRUE, violins_params = list(size = 1),
+    show.legend = TRUE
+  ) +
+  scale_y_continuous(
+    limits = c(-100, 100),
+    breaks = seq(-100, 100, 10)
+  ) +
+  coord_cartesian(ylim = c(-40, 40)) +
+  geom_hline(
+    yintercept = seq(-100, 100, 10),
+    linetype = "dotted",
+    colour = "#999999",
+    size = .8,
+    alpha = .5
+  ) +
+  scale_fill_viridis(
+    option = "viridis",
+    discrete = TRUE
+  ) +
+  scale_color_viridis(
+    option = "viridis",
+    discrete = TRUE
+  ) +
+  ggtitle("Plot 1") +
+  theme_minimal(base_size = 18) +
+  theme(
+    panel.grid = element_blank(),
+    legend.box.background = element_rect(color = "transparent"),
+    legend.position = c(.9, .9),
+    plot.title = element_text(size = 26, hjust = .5)
+  )
+
+RDIplot_1
+
+```
+
+2. the same as above, separately for female and male participants (**hint**: use ```facet_wrap```)
+
+```{r exercise_3_2}
+
+RDIplot_2 <-
+  RDIplot_1 +
+  ggtitle("Plot 2") +
+  facet_wrap(. ~ gender)
+
+RDIplot_2
+
+```
+
+```{r exercise_3_bonus}
+
+# INSERT CODE BONUS PLOT
+
+```
+
+
+
+
+
+
+
+
+
+
+
 
 
 

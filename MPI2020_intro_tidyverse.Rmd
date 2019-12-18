@@ -545,32 +545,33 @@ library(ggpirate)
 
 ```
 
-Here is the code for the plot
+Here is the code for the plot:
 
-```{r plot, results = 'hide'}
+```{r RDIplot}
 
-att_filter_select_recode_long_sep %>%
+RDIplot <- # the plot is saved in this variable
+  att_filter_select_recode_long_sep %>%
   ggplot(aes(
     x = imagery,
     y = ratings,
-    color = drink,
-    fill = drink
+    color = drink, # different line colors for different levels of 'drink' variable
+    fill = drink # different fill colors for different levels of 'drink' variable
   )) +
   geom_pirate(
-    bars = FALSE,
-    cis = TRUE,
-    lines = TRUE, lines_params = list(color = "black"),
-    points = TRUE, points_params = list(shape = 21, color = "black", size = 5, alpha = .4),
-    violins = TRUE, violins_params = list(size = 1),
-    show.legend = TRUE
+    bars = FALSE, # bars
+    cis = TRUE, # confidence intervals
+    lines = TRUE, lines_params = list(color = "black"), # lines indicating means
+    points = TRUE, points_params = list(shape = 21, color = "black", size = 5, alpha = .4), # individual data points
+    violins = TRUE, violins_params = list(size = 1), # smoothed densities
+    show.legend = TRUE # legend
   ) +
-  scale_y_continuous(
-    limits = c(-100, 100),
-    breaks = seq(-100, 100, 10)
+  scale_y_continuous( # y-axis
+    limits = c(-100, 100), # min-max
+    breaks = seq(-100, 100, 10) # tick marks
   ) +
-  coord_cartesian(ylim = c(-40, 40)) +
-  geom_hline(
-    yintercept = seq(-100, 100, 10),
+  coord_cartesian(ylim = c(-40, 40)) + # zoom into a specified portion of the plot
+  geom_hline( # horizontal lines...
+    yintercept = seq(-100, 100, 10), # ... following tick marks
     linetype = "dotted",
     colour = "#999999",
     size = .8,
@@ -593,6 +594,50 @@ att_filter_select_recode_long_sep %>%
     plot.title = element_text(size = 26, hjust = .5) # resize and center title
   )
 
+RDIplot # visualize the plot
+
+```
+
+The plot can be saved with the following command:
+
+```{r RDIplot_save}
+
+ggsave(filename = "plot.png",
+       plot = RDIplot, # if not specified, it will save the latest active plot
+       path = here("figures"),
+       width = 7, height = 7, units = "in", # figure size
+       dpi = 600) # dpi (600 is often requested for publications)
+
+```
+
+This plot shows that negative imagery may have influenced ratings to water more than to beer. 
+
+## Exercise 3
+
+Load ```data_attitude_wine.csv``` and:
+
+1. create a plot similar to what is shown above (with ```wine``` instead of ```beer```) and save it in the subfolder ```figures```
+
+2. the same as above, separately for female and male participants (**hint**: use ```facet_wrap```)
+
+**BONUS**: recreate plot #2 using the [```yarrr```](https://cran.r-project.org/web/packages/yarrr/vignettes/pirateplot.html) package
+
+```{r exercise_3_1}
+
+# INSERT CODE PLOT 1
+
+```
+
+```{r exercise_3_2}
+
+# INSERT CODE PLOT 2
+
+```
+
+```{r exercise_3_bonus}
+
+# INSERT CODE BONUS PLOT
+
 ```
 
 
@@ -604,158 +649,6 @@ att_filter_select_recode_long_sep %>%
 
 
 
-
-
-
-These colors are hideous... let's use a more decent color palette.   
-   
-The package ```viridis``` uses colors that are easier to distinguish for people with colorblindness.
-
-```{r install_viridis, eval = FALSE}
-install.packages("viridis")
-```
-
-
-
-
-## RDI plots
-
-No matter how pretty a bar graph is, it remains a suboptimal way of displaying your data.   
-A better solution is to use **RDI** plots, which show **R**aw data, **D**escriptive & **I**nferential statistics.   
-   
-The following graph shows:
-
-* points representing the raw data
-* smoothed densities
-* box and whisker plot:
-    - vertical bars: medians
-    - boxes: upper and lower quartiles
-    - whiskers: minimum and maximum values
-
-```{r RDI_ggplot}
-att.filter.select.recode.long.sep %>% # we need the complete data frame, not the summary
-  unite("condition", c(drink, imagery)) %>% # paste 'drink' and 'imagery' columns into 'condition'
-  # base plot
-  ggplot(
-    .,
-    aes(
-      x = condition,
-      y = ratings
-    )
-  ) +
-  # box and whisker plot
-  geom_boxplot(
-    alpha = 1, # boxes: transparency
-    size = .5, # boxes: line thickness
-    outlier.alpha = 0
-  ) + # outliers: transparency
-  stat_boxplot(
-    geom = "errorbar", # whiskers
-    size = .5, # whiskers: line thickness
-    width = .25
-  ) + # whiskers: width
-  # violin plot
-  geom_violin(aes(fill = condition), # density: color fill
-    color = "transparent", # outline: color
-    alpha = .25
-  ) + # density: transparency
-  # jittered data points
-  geom_jitter(
-    size = 3, # point: size
-    alpha = .3, # point: transparency
-    position = position_jitter(width = .1)
-  ) + # point: jitter
-  scale_fill_viridis(
-    option = "viridis", # color palette for all fills
-    discrete = TRUE
-  ) +
-  scale_color_viridis(
-    option = "viridis", # color palette for all outlines
-    discrete = TRUE
-  ) +
-  scale_x_discrete(
-    limits = # x-axis: set variable order
-    c(
-      "water_neutral", "water_negative",
-      "beer_neutral", "beer_negative"
-    )
-  ) +
-  scale_y_continuous(
-    name = "", # y-axis: title
-    limits = c(-25, 35), # y-axis: min/max values
-    breaks = seq(-25, 35, 5)
-  ) + # y-axis: tick marks
-  geom_hline(
-    yintercept = seq(-25, 35, 5), # reference lines
-    linetype = "dotted", # reference lines: type
-    colour = "#999999", # reference lines: color
-    size = .8, # reference lines: thickness
-    alpha = .5
-  ) + # reference lines: transparency
-  ggtitle("mean ratings") + # plot title
-  theme_classic(base_size = 18) + # custom theme (resize text)
-  theme(
-    legend.position = "none", # no legend
-    plot.title = element_text(size = 24, hjust = .5)
-  ) # resize and center title
-```
-
-If you don't want to waste time doing it yourself, I recommend the [```yarrr```](https://cran.r-project.org/web/packages/yarrr/vignettes/pirateplot.html) package.   
-   
-```{r install_yarrr, eval = FALSE}
-install.packages("yarrr")
-```
-
-The ```pirateplot``` function creates a graph showing:
-
-* points representing the raw data
-* smoothed densities
-* vertical bars showing central tendencies
-* rectangles representing inference intervals (e.g., 95% confidence intervals)
-
-```{r RDI_pirateplot}
-library(yarrr)
-
-pirateplot(
-  formula = ratings ~ imagery + drink, # dependent ~ independent variables
-  data = att.filter.select.recode.long.sep, # data frame
-  main = "mean ratings", # plot title
-  ylim = c(-25, 35), # y-axis: axis limits
-  ylab = "", # y-axis: no label
-  inf.method = "ci", # type of inference: 95% confidence interval
-  inf.within = participant, # ID variable
-  # theme settings
-  pal = "espresso", # color palette: see piratepal("all")
-  point.o = .5, # data points: opacity (0-1)
-  point.cex = 1.3, # data points: size
-  bean.b.o = .6, # bean border: opacity (0-1)
-  bean.f.o = .6, # bean filling: opacity (0-1)
-  cap.beans = TRUE, # bean densities are capped at the data limits
-  bty = "n", # no box around the plot
-  gl.col = "gray", # background line color (major and minor lines)
-  gl.lwd = 1, # background line width
-  gl.lty = 2
-) # background line type (dashed)
-```
-
-The graphs above suggest that negative imagery may have influenced ratings to water more than to beer. 
-
-# Exercises
-
-## Exercise 2
-
-Compute the following operations _**in one go**_:
-
-* load ```data_attitude_wine.csv```
-* using the ```yarrr``` package, create an RDI graph similar to what is shown above
-**Exercise 2.1** (i.e., separate graphs for female and male participants)
-* modify it as you please (check the ```pirateplot``` options), e.g., change color palette (**hint**: type ```piratepal("all")```)
-
-```{r exercise_2}
-
-# INSERT CODE HERE
-
-```
 
 # Data analysis
 
@@ -963,8 +856,7 @@ Hopefully, I managed to give you a glimpse of the versatility, readability, and 
 
 [^5]: This is a modified version of a data set included in the book [Discovering Statistics Using R (Field, Miles & Field, 2012)](https://www.discoveringstatistics.com/books/discovering-statistics-using-r/).
 
-[^6]: These RDI plots are sometimes called **pirateplots**, in honor of Nathaniel D. Phillips's book [YaRrr! The Pirate’s Guide to R](https://bookdown.org/ndphillips/YaRrr/).
-
+[^6]: These RDI plots are sometimes called **pirateplots**, in honor of Nathaniel D. Phillips's book [YaRrr! The Pirate’s Guide to R](https://bookdown.org/ndphillips/YaRrr/). If you are curious, check out the [```yarrr```](https://cran.r-project.org/web/packages/yarrr/vignettes/pirateplot.html) package.   
 
 
 

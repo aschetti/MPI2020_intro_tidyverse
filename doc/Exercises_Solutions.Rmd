@@ -149,7 +149,7 @@ data_attitude_wine <-
 
 ```{r exercise_3_1}
 
-RDIplot_1 <-
+RDIplot_ex_3_1 <-
   data_attitude_wine %>%
   ggplot(aes(
     x = imagery,
@@ -185,7 +185,7 @@ RDIplot_1 <-
     option = "viridis",
     discrete = TRUE
   ) +
-  ggtitle("Plot 1") +
+  ggtitle("Plot Exercise 3.1") +
   theme_minimal(base_size = 18) +
   theme(
     panel.grid = element_blank(),
@@ -194,7 +194,13 @@ RDIplot_1 <-
     plot.title = element_text(size = 26, hjust = .5)
   )
 
-RDIplot_1
+RDIplot_ex_3_1
+
+ggsave(filename = "plot_ex_3_1.png",
+       plot = RDIplot_ex_3_1,
+       path = here("doc/images"),
+       width = 7, height = 7, units = "in",
+       dpi = 600)
 
 ```
 
@@ -202,18 +208,54 @@ RDIplot_1
 
 ```{r exercise_3_2}
 
-RDIplot_2 <-
-  RDIplot_1 +
-  ggtitle("Plot 2") +
+RDIplot_ex_3_2 <-
+  RDIplot_ex_3_1 +
+  ggtitle("Plot Exercise 3.2") +
   facet_wrap(. ~ gender)
 
-RDIplot_2
+RDIplot_ex_3_2
+
+ggsave(filename = "plot_ex_3_2.png",
+       plot = RDIplot_ex_3_2,
+       path = here("doc/images"),
+       width = 9, height = 7, units = "in",
+       dpi = 600)
 
 ```
 
 ```{r exercise_3_bonus}
 
-# INSERT CODE BONUS PLOT
+# following https://bookdown.org/ndphillips/YaRrr/saving-plots-to-a-file-with-pdf-jpeg-and-png.html
+
+png(
+  file = here("doc/images/plot_ex_3_bonus.png"), # directory + file name
+  width = 9, # width (in inches)
+  height = 7 # height (in inches)
+)
+
+pirateplot(
+  formula = ratings ~ imagery + drink + gender, # dependent ~ independent variables
+  data = data_attitude_wine, # data frame
+  main = "Bonus Plot Exercise 3", # plot title
+  ylim = c(-25, 25), # y-axis: axis limits
+  ylab = "", # y-axis: no label
+  inf.method = "ci", # type of inference: 95% confidence interval
+  inf.within = participant, # ID variable
+  # theme settings
+  pal = "espresso", # color palette: see piratepal("all")
+  point.o = .5, # data points: opacity (0-1)
+  point.cex = 1.3, # data points: size
+  inf.f.o = .3, # 95% CI box filling: opacity (0-1)
+  bean.b.o = .6, # bean border: opacity (0-1)
+  bean.f.o = .6, # bean filling: opacity (0-1)
+  cap.beans = TRUE, # bean densities are capped at the data limits
+  bty = "n", # no box around the plot
+  gl.col = "gray", # background line color (major and minor lines)
+  gl.lwd = 1, # background line width
+  gl.lty = 2 # background line type (dashed)
+)
+
+dev.off()
 
 ```
 

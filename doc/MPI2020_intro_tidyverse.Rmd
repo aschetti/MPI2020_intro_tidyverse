@@ -520,7 +520,7 @@ RDI plots display **R**aw data, **D**escriptives, and **I**nferential statistics
 * boxes: 95% confidence intervals (assuming a normal sampling distribution)
 * smoothed densities
 
-![](figures/plot.png)
+![](images/plot.png)
 
 To build it, we need to install a couple more packages:
 
@@ -604,7 +604,7 @@ The plot can be saved with the following command:
 
 ggsave(filename = "plot.png",
        plot = RDIplot, # if not specified, it will save the latest active plot
-       path = here("figures"),
+       path = here("doc/images"),
        width = 7, height = 7, units = "in", # figure size
        dpi = 600) # dpi (600 is often requested for publications)
 
@@ -616,11 +616,11 @@ This plot shows that negative imagery may have influenced ratings to water more 
 
 Load ```data_attitude_wine.csv``` and:
 
-1. create a plot similar to what is shown above (with ```wine``` instead of ```beer```) and save it in the subfolder ```figures```
+1. create a plot similar to what is shown above (with ```wine``` instead of ```beer```) and save it in the subfolder ```images```
 
 2. the same as above, separately for female and male participants (**hint**: use ```facet_wrap```)
 
-**BONUS**: recreate plot #2 using the [```yarrr```](https://cran.r-project.org/web/packages/yarrr/vignettes/pirateplot.html) package
+**BONUS**: recreate a plot similar to #2 using the [```yarrr```](https://cran.r-project.org/web/packages/yarrr/vignettes/pirateplot.html) package (**warning**: saving the plot to file can be tricky `r emo::ji("wink")`)
 
 ```{r exercise_3_1}
 
@@ -639,6 +639,21 @@ Load ```data_attitude_wine.csv``` and:
 # INSERT CODE BONUS PLOT
 
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -23,6 +23,10 @@ library(tidyverse)
 library(emo)
 library(viridis)
 library(ggpirate)
+library(afex)
+library(multcomp)
+library(emmeans)
+library(bootES)
 
 ```
 
@@ -60,7 +64,7 @@ Following Jenny Brian's suggestion (and to avoid her wrath) we can create a proj
 
 If you check the directory you just created, you will see a file called ```YOURNAME_MPI2020_intro_tidyverse.Rproj```. If your RStudio session is still open, look at the top of the active window: the R Project is already active.
 
-![](doc/images/magic.gif)
+![](images/magic.gif)
 
 ## Install Packages
 
@@ -165,7 +169,7 @@ att_filter <-
 
 ```
 
-Here we keep all participants that are **not** participant #98 (```!=``` operator). The symbol **```%>%```** is the **pipe operator** , which allows to serially concatenate functions applied to the same data frame. Read it as _**"and then"**_. In the example above, we called the data frame ```att``` **and then** applied the ```filter``` function to discard participant #98.
+Here we keep all participants that are **not** participant #98 (```!=``` operator). The symbol **```%>%```** is the **pipe operator**, which allows to serially concatenate functions applied to the same data frame. Read it as _**"and then"**_. In the example above, we called the data frame ```att``` **and then** applied the ```filter``` function to discard participant #98.
 
 How to verify that the filtering worked? You could click on  ```att``` in the *Environment* window and look for participant #98, but it can be tedious with big data sets. An easy and flexible way is to check if the filtered data set still contains participant #98:
 
@@ -239,7 +243,7 @@ In the next code snippet, we simultaneously **select** and **rename** the variab
 
 att_filter_select <-
   att_filter %>%
-  select(
+  dplyr::select( # there are several functions named 'select', so we need to explicitly call the one from 'dplyr'
     participant = ssj, # new name = old name
     sex,
     beer_negative = beerneg,
@@ -303,9 +307,9 @@ Now we have two variables with redundant information... let's get rid of ```sex`
 
 ```{r recode_noSex}
 
-att_filter_select_recode <-
+att_filter_select_recode <- # overwrite 
   att_filter_select_recode %>%
-  select(-sex) # discard unused variables with '-'
+  dplyr::select(-sex) # discard unused variables with '-'
 
 head(att_filter_select_recode, n = 5)
 
@@ -385,11 +389,11 @@ att_filter_select_recode_long_sep_onego <-
   ) %>%
   # filter cases
   filter(
-    .,
+    ., # this point refers to the current active tibble (it can be omitted)
     waterneu >= -100 & waterneu <= +100
   ) %>%
   # select and rename variables
-  select(
+  dplyr::select(
     .,
     participant = ssj,
     sex,
@@ -406,7 +410,7 @@ att_filter_select_recode_long_sep_onego <-
     )
   ) %>%
   # delete variable
-  select(
+  dplyr::select(
     .,
     -sex
   ) %>%
@@ -511,7 +515,7 @@ Do the following operations _**in one go**_:
 
 Plotting is one of the most satisfying things to do in **R**, especially if you use the package ```ggplot2```... part of the ```tidyverse```! In a nutshell, ```ggplot2``` allows you to build plots iteratively using a series of layers. You start with a **data set** and specify its **aesthetics** (e.g., which variable should be represented on the x-axis?). Later, you can add layers with annotations, statistical summaries, and so on.
 
-Last week you already followed the course of Prof. [Mine Çetinkaya-Rundel](http://www2.stat.duke.edu/~mc301/) on how to create beautiful visualizations with ```ggplot2```. I cannot possibly add anything more than what she already taught you. Here we will simply go through one of my preferred visualizations: **RDI** plots.
+Last week you already followed the workshop of Prof. [Mine Çetinkaya-Rundel](http://www2.stat.duke.edu/~mc301/) on how to create beautiful visualizations with ```ggplot2```. I cannot possibly add anything more than what she already taught you. Here we will simply go through one of my preferred visualizations: **RDI** plots.
 
 RDI plots display **R**aw data, **D**escriptives, and **I**nferential statistics altogether. Nothing is hidden by useless bars, everything is shown so that readers can make up their minds. For example, the violin plot[^6] below shows:
 
@@ -610,8 +614,6 @@ ggsave(filename = "plot.png",
 
 ```
 
-This plot shows that negative imagery may have influenced ratings to water more than to beer. 
-
 ## Exercise 3
 
 Load ```data_attitude_wine.csv``` and:
@@ -640,31 +642,6 @@ Load ```data_attitude_wine.csv``` and:
 
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Data analysis
 
 The aim of this study was to assess whether negative imagery would influence the likeness ratings of alcoholic beverages. It's time to statistically verify this hypothesis.   
@@ -674,7 +651,9 @@ We will run a 2 (**drink**: water, beer) x 2 (**imagery**: neutral, negative) re
 For this demonstration I chose the package ```afex```, authored by [Henrik Singmann](http://singmann.org/about-me/).
 
 ```{r install_afex, eval = FALSE}
-install.packages("afex") # 'afex' also installs many other useful packages... including 'brms'!
+
+install.packages("afex")
+
 ```
 
 ## Repeated measures ANOVA
@@ -682,17 +661,19 @@ install.packages("afex") # 'afex' also installs many other useful packages... in
 The code below shows how to run an ANOVA with this versatile and user-friendly package.
 
 ```{r rmANOVA, message = FALSE}
+
 library(afex)
 library(multcomp) # we didn't explicitly install this package, but it's part of the dependencies of 'afex'
 
-rmANOVA.att <- aov_ez("participant", # variable with subject identifier
+rmANOVA_att <- aov_ez(
+  "participant", # variable with subject identifier
   "ratings", # dependent variable
-  att.filter.select.recode.long.sep, # data frame
+  att_filter_select_recode_long_sep, # data frame
   within = c("drink", "imagery"), # within-subject variables
-  type = 3
-) # type-III sums of squares (default in SPSS)
+  type = 3 # type-III sums of squares (default in SPSS)
+) %>%
+  print()
 
-rmANOVA.att
 ```
 
 The results show:
@@ -713,33 +694,61 @@ library(emmeans) # we didn't explicitly install this package, but it's part of t
 # for details, see https://cran.r-project.org/web/packages/afex/vignettes/afex_anova_example.html#post-hoc-contrasts-and-plotting
 afex_options(emmeans_model = "multivariate")
 
-posthoc.att <-
-  emmeans(rmANOVA.att, ~ imagery:drink) %>% # estimated marginal means
+posthoc_att <-
+  emmeans(rmANOVA_att, ~ imagery*drink) %>% # estimated marginal means
   pairs(., # compare differences between estimated marginal means
-    test = adjusted("free")
-  ) %>% # "free": generalization of Bonferroni-Holm correction, taking into account correlations among model parameters
-  as.glht(.) %>% # better p-value adjustment for multiple testing
-  summary(.) %>% # cleaner output
-  print(.)
+    test = adjusted("free") # "free": generalization of Bonferroni-Holm correction, taking into account correlations among model parameters
+  ) %>%
+  as.glht() %>% # better p-value adjustment for multiple testing
+  summary() %>% # cleaner output
+  print()
+
 ```
 
-The output has all you need to report in a publication... well, almost. Something is missing.   
-   
+Results show[^7]:
+
+* a statistically significant difference (_p_ = `r format(posthoc_att$test$pvalues[2], digits = 1)`) between ratings of **beer** and **water** after **negative** imagery --> after negative advertisement, people still rate beer as more pleasant than water
+* a statistically significant difference (_p_ = `r format(posthoc_att$test$pvalues[6], digits = 1, scientific = FALSE)`) between ratings of **water** after **neutral** compared to **negative** imagery --> water was rated as less pleasant after negative compared to neutral advertisement
+
+Interestingly, **beer** ratings between **negative** and **neutral** imagery are _not_ statistically significant (_p_ = `r  format(posthoc_att$test$pvalues[1], digits = 2)`). This might indicate that the experimental manipulation did not have the intended effect, although such a conclusion cannot be inferred from the non-significant _p_-value alone.
+
+The output of ```rmANOVA_att``` and ```posthoc_att``` is almost publication-ready... almost. Something is missing.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Effect sizes
 
-It is good practice to report **effect sizes** along with *p*-values, so that readers can make their own mind with respect to the importance of the observed effects. Even better, you could report **confidence intervals** around effect sizes, so that readers can have a clear picture of the *precision* of your estimation.   
+It is good practice to report **effect sizes** along with _p_-values, so that readers can make their own mind with respect to the importance of the observed effects. Even better, you could report **confidence intervals** around effect sizes, so that readers can have a clear picture of the _precision_ of your estimation.   
    
-I particularly like the idea of **bootstrapping** effect sizes, a better approach when the data are known not to be normally distributed or when the distribution is unknown[^4]. I will show you how to do it using the package ```bootES```[^5].   
+I particularly like the idea of **bootstrapping** effect sizes, a better approach when the data are known not to be normally distributed or when the distribution is unknown[^8]. I will show you how to do it using the package ```bootES```[^9].   
 
 ```{r install_bootES, eval = FALSE}
+
 install.packages("bootES")
+
 ```
 
-We will compute **Hegdes's _g_**, an unbiased estimate of $\delta$ (for details, see [here](http://journals.sagepub.com/doi/abs/10.1177/0013164404264850))
+We will compute **Hegdes's _g_**, an unbiased estimate of $\delta$ (for details, see [here](http://journals.sagepub.com/doi/abs/10.1177/0013164404264850)).
    
 Because our dependent variable consists of ratings collected from the same participants in different conditions (i.e., repeated measures), we must first manually compute the difference scores between our contrasts of interest (see the output of the paired comparisons above).
 
 ```{r bootES_data_preparation}
+
 att.bootES <-
   att.filter.select.recode.long.sep %>%
   unite("condition", c(drink, imagery)) %>% # create 'condition' variable
@@ -764,6 +773,7 @@ att.bootES <-
   )
 
 head(att.bootES, n = 5)
+
 ```
 
 Now we can calculate the standardized effect size for each difference scores. Using functions in the ```purrr``` package (part of the ```tidyverse```!), we will create separate lists for each difference score and calculate bootstrapped Hegdes's _g_ for each of them.
@@ -873,13 +883,8 @@ Hopefully, I managed to give you a glimpse of the versatility, readability, and 
 
 [^6]: These RDI plots are sometimes called **pirateplots**, in honor of Nathaniel D. Phillips's book [YaRrr! The Pirate’s Guide to R](https://bookdown.org/ndphillips/YaRrr/). If you are curious, check out the [```yarrr```](https://cran.r-project.org/web/packages/yarrr/vignettes/pirateplot.html) package.   
 
+[^7]: Another statistically significant finding (ratings of **beer** after **neutral** imagery vs. ratings of **water** after **negative** imagery) is not of interest for our research question, whereas the ratings difference between beer and water after neutral imagery is only close to the conventional threshold of _p_ = 0.05. This result is not-significant. It does not _"approach significance"_, there is no _"trend toward significance"_, or any other creative way to describe a non-significant finding in a way that will increase your chances of publication. For a fun take on the subject, see [this blog](https://mchankins.wordpress.com/2013/04/21/still-not-significant-2/).
 
+[^8]: If you prefer **not** to bootstrap your effect sizes, you can use the ```MBESS``` package (a useful tutorial can be found [here](http://osc.centerforopenscience.org/2014/03/06/confidence%20intervals/)). If you want to do it in **SPSS**, see [here](https://daniellakens.blogspot.com/2014/06/calculating-confidence-intervals-for.html).
 
-
-
-
-
-
-[^98]: If you prefer **not** to bootstrap your effect sizes, you can use the ```MBESS``` package (a useful tutorial can be found [here](http://osc.centerforopenscience.org/2014/03/06/confidence%20intervals/)). If you want to do it in **SPSS**, see [here](https://daniellakens.blogspot.be/2014/06/calculating-confidence-intervals-for.html).
-
-[^99]: A clear explanation of how to use ```bootES``` is provided by the authors of the package in their [paper](https://link.springer.com/article/10.3758/s13428-013-0330-5).
+[^9]: A clear explanation of how to use ```bootES``` is provided by the authors of the package in their [paper](https://link.springer.com/article/10.3758/s13428-013-0330-5).

@@ -24,7 +24,6 @@ library(emo)
 library(viridis)
 library(ggpirate)
 library(afex)
-library(multcomp)
 library(emmeans)
 library(bootES)
 
@@ -207,8 +206,7 @@ It worked! We could also apply both filters simultaneously using the ```&``` (AN
 
 att_filter <-
   att %>%
-  filter(ssj != 98 &
-    !is.na(waterneu))
+  filter(ssj != 98 & !is.na(waterneu))
 
 ```
 
@@ -461,8 +459,8 @@ It is often required to provide summary statistics of the data. How to do it in 
 
 ```{r data_summary}
 
-summary_att_filter_select_recode_long_sep <-
-  att_filter_select_recode_long_sep %>%
+summary_att_filter_select_recode_long_sep_onego <-
+  att_filter_select_recode_long_sep_onego %>%
   group_by(drink, imagery) %>% # group according to conditions
   summarize(
     n = n(), # number of observations
@@ -554,7 +552,7 @@ Here is the code for the plot:
 ```{r RDIplot}
 
 RDIplot <- # the plot is saved in this variable
-  att_filter_select_recode_long_sep %>%
+  att_filter_select_recode_long_sep_onego %>%
   ggplot(aes(
     x = imagery,
     y = ratings,
@@ -663,16 +661,16 @@ The code below shows how to run an ANOVA with this versatile and user-friendly p
 ```{r rmANOVA, message = FALSE}
 
 library(afex)
-library(multcomp) # we didn't explicitly install this package, but it's part of the dependencies of 'afex'
 
 rmANOVA_att <- aov_ez(
   "participant", # variable with subject identifier
   "ratings", # dependent variable
-  att_filter_select_recode_long_sep, # data frame
+  att_filter_select_recode_long_sep_onego, # data frame
   within = c("drink", "imagery"), # within-subject variables
   type = 3 # type-III sums of squares (default in SPSS)
-) %>%
-  print()
+)
+
+rmANOVA_att
 
 ```
 
@@ -686,7 +684,7 @@ The results show:
 
 The _**drink x imagery**_ interaction is statistically significant... let's run paired comparisons. ```afex``` uses functions included in the ```emmeans``` and ```multcomp``` packages.
 
-```{r paired_contrasts}
+```{r rmANOVA_paired_contrasts}
 
 library(emmeans) # we didn't explicitly install this package, but it's part of the dependencies of 'afex'
 
@@ -707,29 +705,12 @@ posthoc_att <-
 
 Results show[^7]:
 
-* a statistically significant difference (_p_ = `r format(posthoc_att$test$pvalues[2], digits = 1)`) between ratings of **beer** and **water** after **negative** imagery --> after negative advertisement, people still rate beer as more pleasant than water
+* a statistically significant difference (_p_ = `r format(posthoc_att$test$pvalues[2], digits = 1)`) between ratings of **beer** and **water** after **negative** imagery --> after negative advertisement, people (still) rate beer as more pleasant than water
 * a statistically significant difference (_p_ = `r format(posthoc_att$test$pvalues[6], digits = 1, scientific = FALSE)`) between ratings of **water** after **neutral** compared to **negative** imagery --> water was rated as less pleasant after negative compared to neutral advertisement
 
 Interestingly, **beer** ratings between **negative** and **neutral** imagery are _not_ statistically significant (_p_ = `r  format(posthoc_att$test$pvalues[1], digits = 2)`). This might indicate that the experimental manipulation did not have the intended effect, although such a conclusion cannot be inferred from the non-significant _p_-value alone.
 
 The output of ```rmANOVA_att``` and ```posthoc_att``` is almost publication-ready... almost. Something is missing.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ## Effect sizes
 
@@ -737,7 +718,7 @@ It is good practice to report **effect sizes** along with _p_-values, so that re
    
 I particularly like the idea of **bootstrapping** effect sizes, a better approach when the data are known not to be normally distributed or when the distribution is unknown[^8]. I will show you how to do it using the package ```bootES```[^9].   
 
-```{r install_bootES, eval = FALSE}
+```{r install_load_bootES, eval = FALSE}
 
 install.packages("bootES")
 
@@ -749,12 +730,15 @@ Because our dependent variable consists of ratings collected from the same parti
 
 ```{r bootES_data_preparation}
 
-att.bootES <-
-  att.filter.select.recode.long.sep %>%
-  unite("condition", c(drink, imagery)) %>% # create 'condition' variable
-  spread(condition, ratings) %>% # convert from long to wide format
-  # compute mean differences
-  mutate(
+att_bootES <-
+  att_filter_select_recode_long_sep_onego %>%
+  pivot_wider( # convert from long to wide format
+    id_cols = c("participant", "gender"),
+    names_from = c("drink", "imagery"),
+    values_from = "ratings",
+    names_sep = "_"
+      ) %>%
+  mutate( # compute mean differences
     beer_negativeVSbeer_neutral = beer_negative - beer_neutral,
     beer_negativeVSwater_negative = beer_negative - water_negative,
     beer_negativeVSwater_neutral = beer_negative - water_neutral,
@@ -762,42 +746,81 @@ att.bootES <-
     beer_neutralVSwater_neutral = beer_neutral - water_neutral,
     water_negativeVSwater_neutral = water_negative - water_neutral
   ) %>%
-  # delete unused variables
-  # here we must specify that we want to use the 'select' function from 'dplyr' (part of the 'tidyverse'), because there is another function ('lm.ridge' in the 'MASS' package) that creates conflict
-  dplyr::select(-c(beer_negative:water_neutral)) %>%
-  # re-convert to long format
-  gather(
-    key = "diff.conds",
-    value = "ratings",
-    beer_negativeVSbeer_neutral:water_negativeVSwater_neutral
+  dplyr::select(-c(beer_negative:water_neutral)) %>% # delete unused variables
+  pivot_longer( # re-convert to long format
+    cols = beer_negativeVSbeer_neutral:water_negativeVSwater_neutral,
+    names_to = "diff_conds",
+    values_to = "ratings"
   )
 
-head(att.bootES, n = 5)
+head(att_bootES, n = 5)
 
 ```
 
 Now we can calculate the standardized effect size for each difference scores. Using functions in the ```purrr``` package (part of the ```tidyverse```!), we will create separate lists for each difference score and calculate bootstrapped Hegdes's _g_ for each of them.
 
-```{r bootES_purrr, message = FALSE, cols.print = 12}
+
+
+
+# FROM HERE
+
+
+
+```{r bootES_purrr}
+
 library(bootES)
 
-att.HedgesG <-
-  att.bootES %>%
-  split(.$diff.conds) %>% # split difference scores in separate lists
-  # apply bootES function to all lists
-  map(~ bootES(., # data
-    data.col = "ratings", # dependent variable
-    R = 5000, # number of samples
-    effect.type = "hedges.g", # type of effect size
-    ci.type = "bca", # bootstrap method
-    ci.conf = .95
-  )) # confidence level
+set.seed(20200115) # set seed of random number generator, to ensure reproducibility
+
+att_HedgesG <-
+  att_bootES %>%
+  group_by(diff_conds) %>%
+  nest() %>% # create lists with difference scores
+  mutate(
+    bootstrap = map(
+      data, # name of the column with lists
+      ~ bootES(
+        ., # data
+        data.col = "ratings", # dependent variable
+        R = 5000, # number of samples
+        effect.type = "hedges.g", # type of effect size
+        ci.type = "bca", # bootstrap method
+        ci.conf = .95 # confidence level
+      ),
+      data = .
+    ),
+    tidy = map(bootstrap, broom::tidy, conf.int = TRUE)
+  )
+    
+unnest(att_HedgesG, tidy)
+
+
+# magrittr::extract2(att_HedgesG, "bootstrap")
+# 
+# magrittr::extract2(att_HedgesG, "tidy")
+# 
+# 
+# att_HedgesG <-
+#   att_bootES %>%
+#   split(.$diff_conds) %>% # split difference scores in separate lists
+#   # apply bootES function to all lists
+#   map(~ bootES(
+#     .,
+#     data.col = "ratings", # dependent variable
+#     R = 5000, # number of samples
+#     effect.type = "hedges.g", # type of effect size
+#     ci.type = "bca", # bootstrap method
+#     ci.conf = .95 # confidence level
+#   ))
+# 
+
+
 ```
 
-The result is a data frame containing `r length(unique(att.bootES$diff.conds))` lists (i.e., the number of ```diff.conds```), each containing the results of the bootstrapping procedure. As an example, let's look at the list containing the bootstrapped Hegdes's _g_ for the difference ratings of beer after seeing negative vs. neutral imagery:
+The result is a data frame containing `r length(unique(att_bootES$diff_conds))` lists (i.e., the number of ```diff_conds```), each containing the results of the bootstrapping procedure. As an example, let's look at the list containing the bootstrapped Hegdes's _g_ for the difference ratings of beer after seeing negative vs. neutral advertisement:
 
 ```{r bootES_purrr_output}
-att.HedgesG$beer_negativeVSbeer_neutral
+att_HedgesG$beer_negativeVSbeer_neutral
 ```
 
 ## Summary of paired contrasts

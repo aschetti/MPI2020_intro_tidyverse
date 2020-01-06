@@ -131,7 +131,8 @@ att <- read_csv(
   here(
     "raw-data",
     "MixedAttitude.dat"
-  ))
+  )
+)
 
 ```
 
@@ -305,7 +306,7 @@ Now we have two variables with redundant information... let's get rid of ```sex`
 
 ```{r recode_noSex}
 
-att_filter_select_recode <- # overwrite 
+att_filter_select_recode <- # overwrite
   att_filter_select_recode %>%
   dplyr::select(-sex) # discard unused variables with '-'
 
@@ -345,7 +346,8 @@ This experiment has two independent variables, **drink** and **imagery**. In our
 att_filter_select_recode_long_sep <-
   att_filter_select_recode_long %>%
   separate(condition, c("drink", "imagery"), # separate 'condition' into 'drink' and 'imagery'
-           remove = TRUE) %>%                # remove original column
+    remove = TRUE
+  ) %>% # remove original column
   # over-write participant, drink, and imagery
   # in order to convert them to factors
   mutate(
@@ -375,7 +377,7 @@ write_csv(
 
 Thanks to the versatility of the ```tidyverse``` (especially the pipe operator), all the above operations can be performed in one go:
 
-```{r all_operations}
+```{r all_operations, message = FALSE}
 
 att_filter_select_recode_long_sep_onego <-
   # load data
@@ -420,7 +422,8 @@ att_filter_select_recode_long_sep_onego <-
     values_to = "ratings",
   ) %>%
   # separate variable in two
-  separate(.,
+  separate(
+    .,
     condition, c("drink", "imagery"),
     remove = TRUE
   ) %>%
@@ -448,8 +451,10 @@ Are the two data sets really identical? Verify with the ```all_equal``` function
 
 ```{r compare_datasets}
 
-all_equal(att_filter_select_recode_long_sep,
-          att_filter_select_recode_long_sep_onego)
+all_equal(
+  att_filter_select_recode_long_sep,
+  att_filter_select_recode_long_sep_onego
+)
 
 ```
 
@@ -477,6 +482,8 @@ summary_att_filter_select_recode_long_sep_onego <-
 
 ## Exercise 2
 
+### Exercise 2.1
+
 Do the following operations _**in one go**_:
 
 * load the original data (```MixedAttitude.dat```)
@@ -494,7 +501,19 @@ Do the following operations _**in one go**_:
 * convert the data set to **long** format
 * separate conditions into 2 variables (```drink``` and ```imagery```)
 * convert ```participant```, ```gender```, ```drink```, and ```imagery``` to factors
-* save the data set as ```data_attitude_wine.csv``` in the subfolder ```tidy-data```
+
+When you have completed these operations, save the data set as ```data_attitude_wine.csv``` in the subfolder ```tidy-data```.
+
+```{r exercise_2_1}
+
+# INSERT CODE HERE
+
+```
+
+### Exercise 2.2
+
+Using the output of **Exercise 2.1**:
+
 * separately for ```gender```, ```drink```, and ```imagery```, calculate the following summary statistics:
     - number of observations
     - median
@@ -503,7 +522,7 @@ Do the following operations _**in one go**_:
     - maximum value
 * display the results in console
 
-```{r exercise_2}
+```{r exercise_2_2}
 
 # INSERT CODE HERE
 
@@ -604,45 +623,61 @@ The plot can be saved with the following command:
 
 ```{r RDIplot_save}
 
-ggsave(filename = "plot.png",
-       plot = RDIplot, # if not specified, it will save the latest active plot
-       path = here("doc/images"),
-       width = 7, height = 7, units = "in", # figure size
-       dpi = 600) # dpi (600 is often requested for publications)
+ggsave(
+  filename = "plot.png",
+  plot = RDIplot, # if not specified, it will save the latest active plot
+  path = here("doc/images"),
+  width = 7, height = 7, units = "in", # figure size
+  dpi = 600 # dpi (600 is often requested for publications)
+)
 
 ```
 
 ## Exercise 3
 
-Load ```data_attitude_wine.csv``` and:
+### Exercise 3.0
 
-1. create a plot similar to what is shown above (with ```wine``` instead of ```beer```) and save it in the subfolder ```images```
+Load ```data_attitude_wine.csv```
 
-2. the same as above, separately for female and male participants (**hint**: use ```facet_wrap```)
+```{r exercise_3_0}
 
-**BONUS**: recreate a plot similar to #2 using the [```yarrr```](https://cran.r-project.org/web/packages/yarrr/vignettes/pirateplot.html) package (**warning**: saving the plot to file can be tricky `r emo::ji("wink")`)
+# INSERT CODE HERE
+
+```
+
+### Exercise 3.1
+
+Create a plot similar to what is shown above (with ```wine``` instead of ```beer```) and save it in the subfolder ```images```
 
 ```{r exercise_3_1}
 
-# INSERT CODE PLOT 1
+# INSERT CODE HERE
 
 ```
+
+### Exercise 3.2
+
+The same as above, separately for female and male participants (**hint**: use ```facet_wrap```)
 
 ```{r exercise_3_2}
 
-# INSERT CODE PLOT 2
+# INSERT CODE HERE
 
 ```
 
+### Exercise 3 BONUS
+
+Recreate a plot similar to #2 using the [```yarrr```](https://cran.r-project.org/web/packages/yarrr/vignettes/pirateplot.html) package (**warning**: saving the plot to file can be tricky `r emo::ji("wink")`)
+
 ```{r exercise_3_bonus}
 
-# INSERT CODE BONUS PLOT
+# INSERT CODE HERE
 
 ```
 
 # Data analysis
 
-The aim of this study was to assess whether negative imagery would influence the likeness ratings of alcoholic beverages. It's time to statistically verify this hypothesis.   
+The aim of this study was to assess whether negative imagery would influence the likeness ratings of alcoholic beverages. It's time to test this hypothesis statistically.   
    
 We will run a 2 (**drink**: water, beer) x 2 (**imagery**: neutral, negative) repeated measures ANOVA on these ratings.   
    
@@ -663,9 +698,9 @@ The code below shows how to run an ANOVA with this versatile and user-friendly p
 library(afex)
 
 rmANOVA_att <- aov_ez(
-  "participant", # variable with subject identifier
-  "ratings", # dependent variable
-  att_filter_select_recode_long_sep_onego, # data frame
+  data = att_filter_select_recode_long_sep_onego, # data 
+  id = "participant", # variable with subject identifier
+  dv = "ratings", # dependent variable
   within = c("drink", "imagery"), # within-subject variables
   type = 3 # type-III sums of squares (default in SPSS)
 )
@@ -676,13 +711,13 @@ rmANOVA_att
 
 The results show:
 
-* a statistically significant main effect of _**drink**_ (*F*<sub>(`r summary(rmANOVA.att)$univariate.tests[2, 2]`, `r summary(rmANOVA.att)$univariate.tests[2, 4]`)</sub> = `r format(rmANOVA.att$anova_table$F[1], digits = 3)`, *p* = `r format(summary(rmANOVA.att)$univariate.tests[2, 6], digits = 1)`, $\eta$<sup>2</sup><sub>G</sub> = `r format(rmANOVA.att$anova_table$ges[1], digits = 2)`)
-* a statistically significant main effect of _**imagery**_ (*F*<sub>(`r summary(rmANOVA.att)$univariate.tests[3, 2]`, `r summary(rmANOVA.att)$univariate.tests[3, 4]`)</sub> = `r format(rmANOVA.att$anova_table$F[2], digits = 4)`, *p* = `r format(summary(rmANOVA.att)$univariate.tests[3, 6], digits = 2)`, $\eta$<sup>2</sup><sub>G</sub> = `r format(rmANOVA.att$anova_table$ges[2], digits = 2)`)
-* a statistically significant _**drink x imagery**_ interaction (*F*<sub>(`r summary(rmANOVA.att)$univariate.tests[4, 2]`, `r summary(rmANOVA.att)$univariate.tests[4, 4]`)</sub> = `r format(rmANOVA.att$anova_table$F[3], digits = 3)`, *p* = `r format(summary(rmANOVA.att)$univariate.tests[4, 6], digits = 2)`, $\eta$<sup>2</sup><sub>G</sub> = `r format(rmANOVA.att$anova_table$ges[3], digits = 1)`)
+* a statistically significant main effect of _**drink**_ (*F*<sub>(`r summary(rmANOVA_att)$univariate.tests[2, 2]`, `r summary(rmANOVA_att)$univariate.tests[2, 4]`)</sub> = `r format(rmANOVA_att$anova_table$F[1], digits = 3)`, *p* = `r format(summary(rmANOVA_att)$univariate.tests[2, 6], digits = 1)`, $\eta$<sup>2</sup><sub>G</sub> = `r format(rmANOVA_att$anova_table$ges[1], digits = 2)`)
+* a statistically significant main effect of _**imagery**_ (*F*<sub>(`r summary(rmANOVA_att)$univariate.tests[3, 2]`, `r summary(rmANOVA_att)$univariate.tests[3, 4]`)</sub> = `r format(rmANOVA_att$anova_table$F[2], digits = 4)`, *p* = `r format(summary(rmANOVA_att)$univariate.tests[3, 6], digits = 2)`, $\eta$<sup>2</sup><sub>G</sub> = `r format(rmANOVA_att$anova_table$ges[2], digits = 2)`)
+* a statistically significant _**drink x imagery**_ interaction (*F*<sub>(`r summary(rmANOVA_att)$univariate.tests[4, 2]`, `r summary(rmANOVA_att)$univariate.tests[4, 4]`)</sub> = `r format(rmANOVA_att$anova_table$F[3], digits = 3)`, *p* = `r format(summary(rmANOVA_att)$univariate.tests[4, 6], digits = 2)`, $\eta$<sup>2</sup><sub>G</sub> = `r format(rmANOVA_att$anova_table$ges[3], digits = 1)`)
 
 ## Paired contrasts
 
-The _**drink x imagery**_ interaction is statistically significant... let's run paired comparisons. ```afex``` uses functions included in the ```emmeans``` and ```multcomp``` packages.
+The _**drink x imagery**_ interaction is statistically significant... let's run paired comparisons. ```afex``` uses functions included in the ```emmeans``` package.
 
 ```{r rmANOVA_paired_contrasts}
 
@@ -693,22 +728,22 @@ library(emmeans) # we didn't explicitly install this package, but it's part of t
 afex_options(emmeans_model = "multivariate")
 
 posthoc_att <-
-  emmeans(rmANOVA_att, ~ imagery*drink) %>% # estimated marginal means
+  emmeans(rmANOVA_att, ~ imagery * drink) %>% # estimated marginal means
   pairs(., # compare differences between estimated marginal means
     test = adjusted("free") # "free": generalization of Bonferroni-Holm correction, taking into account correlations among model parameters
   ) %>%
   as.glht() %>% # better p-value adjustment for multiple testing
-  summary() %>% # cleaner output
+  summary() %>% # complete output
   print()
 
 ```
 
 Results show[^7]:
 
-* a statistically significant difference (_p_ = `r format(posthoc_att$test$pvalues[2], digits = 1)`) between ratings of **beer** and **water** after **negative** imagery --> after negative advertisement, people (still) rate beer as more pleasant than water
+* a statistically significant difference (_p_ = `r format(posthoc_att$test$pvalues[2], digits = 2)`) between ratings of **beer** and **water** after **negative** imagery --> after negative advertisement, people (still) rate beer as more pleasant than water
 * a statistically significant difference (_p_ = `r format(posthoc_att$test$pvalues[6], digits = 1, scientific = FALSE)`) between ratings of **water** after **neutral** compared to **negative** imagery --> water was rated as less pleasant after negative compared to neutral advertisement
 
-Interestingly, **beer** ratings between **negative** and **neutral** imagery are _not_ statistically significant (_p_ = `r  format(posthoc_att$test$pvalues[1], digits = 2)`). This might indicate that the experimental manipulation did not have the intended effect, although such a conclusion cannot be inferred from the non-significant _p_-value alone.
+Interestingly, **beer** ratings between **negative** and **neutral** imagery are _not_ statistically significant (_p_ = `r  format(posthoc_att$test$pvalues[1], digits = 3)`). This might indicate that the experimental manipulation did not have the intended effect, although such a conclusion cannot be inferred from the non-significant _p_-value alone.
 
 The output of ```rmANOVA_att``` and ```posthoc_att``` is almost publication-ready... almost. Something is missing.
 
@@ -721,24 +756,25 @@ I particularly like the idea of **bootstrapping** effect sizes, a better approac
 ```{r install_load_bootES, eval = FALSE}
 
 install.packages("bootES")
+library(bootES)
 
 ```
 
-We will compute **Hegdes's _g_**, an unbiased estimate of $\delta$ (for details, see [here](http://journals.sagepub.com/doi/abs/10.1177/0013164404264850)).
+We will compute **Hegdes' _g_**, an unbiased estimate of $\delta$ (for details, see [here](http://journals.sagepub.com/doi/abs/10.1177/0013164404264850)).
    
 Because our dependent variable consists of ratings collected from the same participants in different conditions (i.e., repeated measures), we must first manually compute the difference scores between our contrasts of interest (see the output of the paired comparisons above).
 
 ```{r bootES_data_preparation}
 
-att_bootES <-
+att_prep_bootES <-
   att_filter_select_recode_long_sep_onego %>%
   pivot_wider( # convert from long to wide format
     id_cols = c("participant", "gender"),
     names_from = c("drink", "imagery"),
     values_from = "ratings",
     names_sep = "_"
-      ) %>%
-  mutate( # compute mean differences
+  ) %>%
+  mutate( # compute differences
     beer_negativeVSbeer_neutral = beer_negative - beer_neutral,
     beer_negativeVSwater_negative = beer_negative - water_negative,
     beer_negativeVSwater_neutral = beer_negative - water_neutral,
@@ -753,139 +789,135 @@ att_bootES <-
     values_to = "ratings"
   )
 
-head(att_bootES, n = 5)
+head(att_prep_bootES, n = 5)
 
 ```
 
 Now we can calculate the standardized effect size for each difference scores. Using functions in the ```purrr``` package (part of the ```tidyverse```!), we will create separate lists for each difference score and calculate bootstrapped Hegdes's _g_ for each of them.
 
-
-
-
-# FROM HERE
-
-
-
 ```{r bootES_purrr}
-
-library(bootES)
 
 set.seed(20200115) # set seed of random number generator, to ensure reproducibility
 
-att_HedgesG <-
-  att_bootES %>%
-  group_by(diff_conds) %>%
-  nest() %>% # create lists with difference scores
-  mutate(
-    bootstrap = map(
-      data, # name of the column with lists
-      ~ bootES(
-        ., # data
-        data.col = "ratings", # dependent variable
-        R = 5000, # number of samples
+att_bootES <-
+  att_prep_bootES %>%
+  group_by(diff_conds) %>% # group according to difference scores
+  nest() %>% # create separate lists with difference scores
+  rename(diff_ratings = data) %>% # rename column with lists, to avoid confusion
+  mutate( # create new variable with bootstrapping results
+    bootstrap = map( # apply the bootES function for each list
+      diff_ratings, # name of the column with lists
+      ~ bootES( # fuction to apply to each list
+        ., # tibble with all data
+        data.col = "ratings", # dependent variable within each list
+        R = 5000, # number of bootstrap samples
         effect.type = "hedges.g", # type of effect size
         ci.type = "bca", # bootstrap method
         ci.conf = .95 # confidence level
       ),
       data = .
     ),
-    tidy = map(bootstrap, broom::tidy, conf.int = TRUE)
-  )
-    
-unnest(att_HedgesG, tidy)
+    tidy = map(bootstrap, broom::tidy, conf.int = TRUE) # extract bootstrap results from each list into new columns
+  ) %>%
+  ungroup() # ungroup
 
-
-# magrittr::extract2(att_HedgesG, "bootstrap")
-# 
-# magrittr::extract2(att_HedgesG, "tidy")
-# 
-# 
-# att_HedgesG <-
-#   att_bootES %>%
-#   split(.$diff_conds) %>% # split difference scores in separate lists
-#   # apply bootES function to all lists
-#   map(~ bootES(
-#     .,
-#     data.col = "ratings", # dependent variable
-#     R = 5000, # number of samples
-#     effect.type = "hedges.g", # type of effect size
-#     ci.type = "bca", # bootstrap method
-#     ci.conf = .95 # confidence level
-#   ))
-# 
-
+# summary of results
+att_HedgesG <-
+  att_bootES %>%
+  unnest(tidy) %>% # put bootstrap results into new columns
+  dplyr::select( # select and rename variables to report (also changing the order)
+    diff_conds,
+    "Hedges_g" = statistic,
+    "CI95_low" = conf.low,
+    "CI95_high" = conf.high,
+    bias,
+    "std_error" = std.error
+  ) %>%
+  print()
 
 ```
 
-The result is a data frame containing `r length(unique(att_bootES$diff_conds))` lists (i.e., the number of ```diff_conds```), each containing the results of the bootstrapping procedure. As an example, let's look at the list containing the bootstrapped Hegdes's _g_ for the difference ratings of beer after seeing negative vs. neutral advertisement:
+The output (```att_HedgesG```) is a data frame containing the results of the bootstrapping procedure for each ```diff_conds```.
 
-```{r bootES_purrr_output}
-att_HedgesG$beer_negativeVSbeer_neutral
+This is a very flexible and powerful approach, which can be used to run all kinds of operations to subsets of your data. See an example [here](https://r4ds.had.co.nz/many-models.html) on how to run many linear models simultaneously.
+
+## Exercise 4
+
+## Exercise 4.1
+
+Load ```data_attitude_wine.csv```.
+
+```{r exercise_4_1}
+
+# INSERT CODE HERE
+
 ```
 
-## Summary of paired contrasts
+### Exercise 4.1.1
 
-The final step is to summarize the information stored in different lists in one single data frame that can later be converted into a table and cleaned up for publication. This is one way to do it:
+Run a 2 (**drink**) x 2 (**imagery**) repeated measures ANOVA on likeness ratings and display the results in console.
 
-```{r bootES_summary}
-# initialize summary table: what do you want to report?
-summary.att.bootES <- data.frame(magrittr::extract2(posthoc.att, 1)$object, # extract2, a function of 'magrittr' (part of the 'tidyverse'!), extracts values from lists (similarly to [[]] in base R)
-  "Hedges.g" = NA,
-  "CI.95.low" = NA,
-  "CI.95.high" = NA,
-  "bias" = NA,
-  "std.error" = NA
-)
+```{r exercise_4_1_1}
 
-# OH MY GOD A LOOP IN R!
-for (i in 1:length(unique(att.bootES$diff.conds))) { # loop through conditions
-  summary.att.bootES[i, 7:11] <- summary(magrittr::extract2(att.HedgesG, i)) # extract values from the list with bootstrapped Hedges's g
-}
+# INSERT CODE HERE
 
-summary.att.bootES
 ```
 
-# Exercises
+### Exercise 4.1.2
 
-## Exercise 3.1
+Run paired contrasts and display the results in console.
 
-Run the same analyses using the exercise data set (i.e., wine instead of beer):
+```{r exercise_4_1_2}
 
-* 2 (**drink**) x 2 (**imagery**) repeated measures ANOVA on likeness ratings
-* paired contrasts
-* bootstrapped effect sizes (calculate **Pearson's _r_** instead of Hegdes's _g_)
-* summary table of paired contrasts
+# INSERT CODE HERE
 
-```{r exercise_3_1, message = FALSE}
-
-################################################
-############### INSERT CODE HERE ###############
-################################################
 ```
 
-## Exercise 3.2
+### Exercise 4.1.3
 
-Run a 2 (**gender**) x 2 (**drink**) x 2 (**imagery**) mixed ANOVA on likeness ratings:
+Run bootstrapped effect sizes (calculate **Pearson's _r_** instead of Hegdes's _g_) and display the results in console.
 
-* remember: ```gender``` is a between-subject factor!
-* paired contrasts: test **only** difference ratings between *female* and *male* participants (**hint**: see example [here](https://cran.r-project.org/web/packages/afex/vignettes/afex_anova_example.html#post-hoc-contrasts-and-plotting)):
-    - wine_negative
-    - wine_neutral
-    - water_negative
-    - water_neutral
-* bootstrapped effect sizes (**Cohen's _d_**) of the paired comparisons of interest
-* summary table of paired contrasts
+```{r exercise_4_1_3}
 
-```{r exercise_3_2, message = FALSE}
+# INSERT CODE HERE
 
-################################################
-############### INSERT CODE HERE ###############
-################################################
+```
+
+## Exercise 4.2
+
+### Exercise 4.2.1
+
+Run a 2 (**gender**) x 2 (**drink**) x 2 (**imagery**) mixed ANOVA on likeness ratings. **Remember**: ```gender``` is a between-subject factor!
+
+```{r exercise_4_2_1}
+
+# INSERT CODE HERE
+
+```
+
+### Exercise 4.2.2
+
+Paired contrasts: test **only** difference ratings between *female* and *male* participants (**hint**: see example [here](https://cran.r-project.org/web/packages/afex/vignettes/afex_anova_example.html#post-hoc-contrasts-and-plotting)).
+
+```{r exercise_4_2_2}
+
+# INSERT CODE HERE
+
+```
+
+### Exercise 4.2.3
+
+Bootstrapped effect sizes (**Cohen's _d_**) of the paired comparisons above.
+
+```{r exercise_4_2_3}
+
+# INSERT CODE HERE
+
 ```
 
 # Conclusion
 
-Hopefully, I managed to give you a glimpse of the versatility, readability, and user-friendliness of the ```tidyverse```. Enjoy your tidy new life! 
+I hope to have given you a glimpse of the versatility, readability, and user-friendliness of the ```tidyverse```. Enjoy your tidy new life! 
 
 <br>
 <center>
@@ -900,7 +932,7 @@ Hopefully, I managed to give you a glimpse of the versatility, readability, and 
 
 [^3]: It is good to know where your packages are. Type ```.libPaths()``` in the RStudio console to find out.
 
-[^4]: When you have no idea where to start, [Google](https://www.google.com/) (or its privacy-friendly alternative [StartPage](https://www.startpage.com/)) and [StackOverflow](https://stackoverflow.com/) are your friends!
+[^4]: When you have no idea where to start, [Google](https://www.google.com/) (or its privacy-oriented alternative [StartPage](https://www.startpage.com/)) and [StackOverflow](https://stackoverflow.com/) are your friends!
 
 [^5]: This is a modified version of a data set included in the book [Discovering Statistics Using R (Field, Miles & Field, 2012)](https://www.discoveringstatistics.com/books/discovering-statistics-using-r/).
 

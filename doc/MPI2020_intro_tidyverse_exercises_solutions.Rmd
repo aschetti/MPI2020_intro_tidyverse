@@ -1,0 +1,540 @@
+---
+title: '<center> <h1> A taste of data science using R and the ```tidyverse``` -- Solutions </h1> </center>'
+author: '[Antonio Schettino](https://asch3tti.netlify.com/ "Antonio Schettino")'
+date: 'January 15th, 2020'
+output:
+  html_document:
+    df_print: paged
+    theme: spacelab
+    highlight: tango
+    code_folding: show
+    toc: true
+    toc_float: true
+    toc_depth: 4
+    includes:
+      after_body: footer.html
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+
+library(knitr)
+library(here)
+library(tidyverse)
+library(viridis)
+library(ggpirate)
+library(yarrr)
+library(afex)
+library(emmeans)
+library(bootES)
+
+```
+
+# Exercise 1
+
+Install and load the ```tidyverse```.
+
+```{r install_load_tidyverse, eval = FALSE}
+
+install.packages("tidyverse")
+library(tidyverse)
+
+```
+
+# Exercise 2
+
+## Exercise 2.1
+
+Do the following operations _**in one go**_:
+
+* load the original data (```MixedAttitude.dat```)
+* convert ```sex``` to a **categorical** variable (named ```gender```) with 2 levels:
+    - 1 --> female
+    - 2 --> male
+* eliminate from the data set the following variables: ```sex```, ```beerpos```, ```beerneg```, ```beerneut```, ```winepos```, and ```waterpos```
+* using the function ```rename```, rename the variables you kept:
+    - ssj --> participant
+    - wineneg --> wine_negative
+    - wineneut --> wine_neutral
+    - waterneg --> water_negative
+    - waterneu --> water_neutral
+* filter out outlier participants as well as all participants who rated _water_ after _neutral_ imagery as _**lower than -10**_
+* convert the data set to **long** format
+* separate conditions into 2 variables (```drink``` and ```imagery```)
+* convert ```participant```, ```gender```, ```drink```, and ```imagery``` to factors
+
+When you have completed these operations, save the data set as ```data_attitude_wine.csv``` in the subfolder ```tidy-data```.
+
+```{r exercise_2_1, message = FALSE}
+
+library(here)
+library(tidyverse)
+
+data_attitude_wine <-
+  read_csv(
+    here(
+      "raw-data",
+      "MixedAttitude.dat"
+    )
+  ) %>%
+  mutate(
+    gender = recode(
+      factor(sex),
+      "1" = "female", "2" = "male"
+    )
+  ) %>%
+  select(-c(
+    sex,
+    beerpos,
+    beerneg,
+    beerneut,
+    winepos,
+    waterpos
+  )) %>%
+  rename(
+    participant = ssj,
+    wine_negative = wineneg,
+    wine_neutral = wineneut,
+    water_negative = waterneg,
+    water_neutral = waterneu
+  ) %>%
+  filter(
+    water_neutral >= -100 & water_neutral <= +100 &
+      water_neutral >= -10
+  ) %>%
+  pivot_longer(
+    cols = c(wine_negative, wine_neutral, water_negative, water_neutral),
+    names_to = "condition",
+    values_to = "ratings",
+  ) %>%
+  separate(
+    condition, c("drink", "imagery"),
+    remove = TRUE
+  ) %>%
+  mutate(
+    participant = as_factor(participant),
+    gender = as_factor(gender),
+    drink = as_factor(drink),
+    imagery = as_factor(imagery)
+  )
+
+write_csv(
+  data_attitude_wine,
+  here("tidy-data", "data_attitude_wine.csv")
+)
+
+```
+
+## Exercise 2.2
+
+Using the output of **Exercise 2.1**:
+
+* separately for ```gender```, ```drink```, and ```imagery```, calculate the following summary statistics:
+    - number of observations
+    - median
+    - median absolute deviation
+    - minimum value
+    - maximum value
+* display the results in console
+
+```{r exercise_2_2, message = FALSE}
+
+summary_data_attitude_wine <-
+  read_csv(
+    here(
+      "tidy-data",
+      "data_attitude_wine.csv"
+    )
+  ) %>%
+  group_by(gender, drink, imagery) %>%
+  summarize(
+    n = n(),
+    median = median(ratings),
+    mad = mad(ratings),
+    min = min(ratings),
+    max = max(ratings)
+  ) %>%
+  ungroup() %>%
+  print()
+
+```
+
+# Exercise 3
+
+## Exercise 3.0
+
+Load ```data_attitude_wine.csv```.
+
+```{r exercise_3_0, message = FALSE}
+
+data_attitude_wine <-
+  read_csv(
+    here(
+      "tidy-data",
+      "data_attitude_wine.csv"
+    )
+  )
+
+```
+
+## Exercise 3.1
+
+```{r plot, echo = FALSE, out.width = "80%", fig.cap = "_RDI plot generated during the workshop._"}
+
+include_graphics("images/plot.png")
+
+```
+
+Create a plot similar to what is shown above (with ```wine``` instead of ```beer```) and save it in the subfolder ```doc/images```.
+
+```{r exercise_3_1}
+
+library(viridis)
+library(ggpirate)
+
+RDIplot_ex_3_1 <-
+  data_attitude_wine %>%
+  ggplot(aes(
+    x = imagery,
+    y = ratings,
+    color = drink,
+    fill = drink
+  )) +
+  geom_pirate(
+    bars = FALSE,
+    cis = TRUE,
+    lines = TRUE, lines_params = list(color = "black"),
+    points = TRUE, points_params = list(shape = 21, color = "black", size = 5, alpha = .4),
+    violins = TRUE, violins_params = list(size = 1),
+    show.legend = TRUE
+  ) +
+  scale_y_continuous(
+    limits = c(-100, 100),
+    breaks = seq(-100, 100, 10)
+  ) +
+  coord_cartesian(ylim = c(-40, 40)) +
+  geom_hline(
+    yintercept = seq(-100, 100, 10),
+    linetype = "dotted",
+    colour = "#999999",
+    size = .8,
+    alpha = .5
+  ) +
+  scale_fill_viridis(
+    option = "viridis",
+    discrete = TRUE
+  ) +
+  scale_color_viridis(
+    option = "viridis",
+    discrete = TRUE
+  ) +
+  ggtitle("Plot Exercise 3.1") +
+  theme_minimal(base_size = 18) +
+  theme(
+    panel.grid = element_blank(),
+    legend.box.background = element_rect(color = "transparent"),
+    legend.position = c(.9, .9),
+    plot.title = element_text(size = 26, hjust = .5)
+  )
+
+ggsave(
+  filename = "plot_ex_3_1.png",
+  plot = RDIplot_ex_3_1,
+  path = here("doc/images"),
+  width = 7, height = 7, units = "in",
+  dpi = 600
+)
+
+RDIplot_ex_3_1
+
+```
+
+## Exercise 3.2
+
+The same as above, separately for female and male participants.
+
+```{r exercise_3_2}
+
+RDIplot_ex_3_2 <-
+  RDIplot_ex_3_1 +
+  ggtitle("Plot Exercise 3.2") +
+  facet_wrap(. ~ gender)
+
+ggsave(
+  filename = "plot_ex_3_2.png",
+  plot = RDIplot_ex_3_2,
+  path = here("doc/images"),
+  width = 9, height = 7, units = "in",
+  dpi = 600
+)
+
+RDIplot_ex_3_2
+
+```
+
+## Exercise 3 BONUS
+
+Recreate a plot similar to #2 using the [```yarrr```](https://cran.r-project.org/web/packages/yarrr/vignettes/pirateplot.html) package.
+
+```{r exercise_3_bonus}
+
+library(yarrr)
+
+# following https://bookdown.org/ndphillips/YaRrr/saving-plots-to-a-file-with-pdf-jpeg-and-png.html
+# this plot is saved as pdf to avoid 'Error in plot.new() : figure margins too large'
+# displayed when using the functions 'png' or 'jpeg'
+pdf(
+  file = here("doc/images/plot_ex_3_bonus.pdf"), # directory + file name
+  width = 9, # width (in inches)
+  height = 7 # height (in inches)
+)
+
+pirateplot(
+  formula = ratings ~ imagery + drink + gender, # dependent ~ independent variables
+  data = data_attitude_wine, # data frame
+  main = "Bonus Plot Exercise 3", # plot title
+  ylim = c(-25, 25), # y-axis: axis limits
+  ylab = "", # y-axis: no label
+  inf.method = "ci", # type of inference: 95% confidence interval
+  inf.within = participant, # ID variable
+  # theme settings
+  pal = "espresso", # color palette: see piratepal("all")
+  point.o = .5, # data points: opacity (0-1)
+  point.cex = 1.3, # data points: size
+  inf.f.o = .3, # 95% CI box filling: opacity (0-1)
+  bean.b.o = .6, # bean border: opacity (0-1)
+  bean.f.o = .6, # bean filling: opacity (0-1)
+  cap.beans = TRUE, # bean densities are capped at the data limits
+  bty = "n", # no box around the plot
+  gl.col = "gray", # background line color (major and minor lines)
+  gl.lwd = 1, # background line width
+  gl.lty = 2 # background line type (dashed)
+)
+
+dev.off()
+
+```
+
+![](images/plot_ex_3_bonus.pdf){width=100% height=700}
+
+## Exercise 4
+
+### Exercise 4.1
+
+Load ```data_attitude_wine.csv```.
+
+```{r exercise_4_1, message = FALSE}
+
+data_attitude_wine <-
+  read_csv(
+    here(
+      "tidy-data",
+      "data_attitude_wine.csv"
+    )
+  )
+
+```
+
+#### Exercise 4.1.1
+
+Run a 2 (**drink**) x 2 (**imagery**) repeated measures ANOVA on likeness ratings and display the results in console.
+
+```{r exercise_4_1_1}
+
+library(afex)
+
+rmANOVA_att_wine <- aov_ez(
+  "participant",
+  "ratings",
+  data_attitude_wine,
+  within = c("drink", "imagery"),
+  type = 3
+)
+
+rmANOVA_att_wine
+
+```
+
+#### Exercise 4.1.2
+
+Run paired contrasts and display the results in console.
+
+```{r exercise_4_1_2}
+
+library(emmeans)
+
+afex_options(emmeans_model = "multivariate")
+
+posthoc_att_wine <-
+  emmeans(rmANOVA_att_wine, ~ imagery * drink) %>%
+  pairs(.,
+    test = adjusted("free")
+  ) %>%
+  as.glht() %>%
+  summary() %>%
+  print()
+
+```
+
+#### Exercise 4.1.3
+
+Run bootstrapped effect sizes (calculate **Pearson's _r_** instead of Hegdes' _g_) and display the results in console.
+
+```{r exercise_4_1_3}
+
+att_wine_prep_bootES <-
+  data_attitude_wine %>%
+  pivot_wider(
+    id_cols = c("participant", "gender"),
+    names_from = c("drink", "imagery"),
+    values_from = "ratings",
+    names_sep = "_"
+  ) %>%
+  mutate(
+    wine_negativeVSwine_neutral = wine_negative - wine_neutral,
+    wine_negativeVSwater_negative = wine_negative - water_negative,
+    wine_negativeVSwater_neutral = wine_negative - water_neutral,
+    wine_neutralVSwater_negative = wine_neutral - water_negative,
+    wine_neutralVSwater_neutral = wine_neutral - water_neutral,
+    water_negativeVSwater_neutral = water_negative - water_neutral
+  ) %>%
+  dplyr::select(-c(wine_negative:water_neutral)) %>%
+  pivot_longer(
+    cols = wine_negativeVSwine_neutral:water_negativeVSwater_neutral,
+    names_to = "diff_conds",
+    values_to = "ratings"
+  )
+
+library(bootES)
+
+set.seed(20200115)
+
+att_wine_bootES <-
+  att_wine_prep_bootES %>%
+  group_by(diff_conds) %>%
+  nest() %>%
+  rename(diff_ratings = data) %>%
+  mutate(
+    bootstrap = map(
+      diff_ratings,
+      ~ bootES(
+        .,
+        data.col = "ratings",
+        R = 5000,
+        effect.type = "r",
+        ci.type = "bca",
+        ci.conf = .95
+      ),
+      data = .
+    ),
+    tidy = map(bootstrap, broom::tidy, conf.int = TRUE)
+  ) %>%
+  ungroup()
+
+att_wine_Pearson <-
+  att_wine_bootES %>%
+  unnest(tidy) %>%
+  dplyr::select(
+    diff_conds,
+    "Pearson_r" = statistic,
+    "CI95_low" = conf.low,
+    "CI95_high" = conf.high,
+    bias,
+    "std_error" = std.error
+  ) %>%
+  print()
+
+```
+
+### Exercise 4.2
+
+#### Exercise 4.2.1
+
+Run a 2 (**gender**) x 2 (**drink**) x 2 (**imagery**) mixed ANOVA on likeness ratings. **Remember**: ```gender``` is a between-subject factor!
+
+```{r exercise_4_2_1, message = FALSE}
+
+rmANOVA_att_wine_gender <- aov_ez(
+  "participant",
+  "ratings",
+  data_attitude_wine,
+  within = c("drink", "imagery"),
+  between = "gender",
+  type = 3
+)
+
+rmANOVA_att_wine_gender
+
+```
+
+#### Exercise 4.2.2
+
+Paired contrasts: test **only** difference ratings between *female* and *male* participants (**hint**: see example [here](https://cran.r-project.org/web/packages/afex/vignettes/afex_anova_example.html#post-hoc-contrasts-and-plotting)).
+
+```{r exercise_4_2_2}
+
+posthoc_att_wine_gender <-
+  emmeans(rmANOVA_att_wine_gender, ~ gender | imagery | drink) %>%
+  pairs(.,
+    test = adjusted("free")
+  ) %>%
+  as.glht() %>%
+  summary() %>%
+  print()
+
+```
+
+#### Exercise 4.2.3
+
+Bootstrapped effect sizes (**Cohen's _d_**) of the paired comparisons above.
+
+```{r exercise_4_2_3}
+
+att_wine_gender_prep_bootES <-
+  data_attitude_wine %>%
+  unite(condition, c(drink, imagery), sep = "_", remove = TRUE)
+
+att_wine_gender_bootES <-
+  att_wine_gender_prep_bootES %>%
+  group_by(condition) %>%
+  nest() %>%
+  rename(all_ratings = data) %>%
+  mutate(
+    bootstrap = map(
+      all_ratings,
+      ~ bootES(
+        .,
+        data.col = "ratings",
+        group.col = "gender",
+        contrast = c("female", "male"),
+        R = 5000,
+        effect.type = "cohens.d",
+        ci.type = "bca",
+        ci.conf = .95
+      ),
+      data = .
+    ),
+    tidy = map(bootstrap, broom::tidy, conf.int = TRUE)
+  ) %>%
+  ungroup()
+
+att_wine_gender_Cohen <-
+  att_wine_gender_bootES %>%
+  unnest(tidy) %>%
+  dplyr::select(
+    condition,
+    "Cohen_d" = statistic,
+    "CI95_low" = conf.low,
+    "CI95_high" = conf.high,
+    bias,
+    "std_error" = std.error
+  ) %>%
+  print()
+
+```
+
+***
+***
+
+

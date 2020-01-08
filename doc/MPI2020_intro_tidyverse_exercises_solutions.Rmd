@@ -28,6 +28,7 @@ library(yarrr)
 library(afex)
 library(emmeans)
 library(bootES)
+library(broom)
 
 ```
 

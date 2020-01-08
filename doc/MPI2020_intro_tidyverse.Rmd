@@ -26,6 +26,7 @@ library(ggpirate)
 library(afex)
 library(emmeans)
 library(bootES)
+library(broom)
 
 ```
 
@@ -751,12 +752,16 @@ The output of ```rmANOVA_att``` and ```posthoc_att``` is almost publication-read
 
 It is good practice to report **effect sizes** along with _p_-values, so that readers can make their own mind with respect to the importance of the observed effects. Even better, you could report **confidence intervals** around effect sizes, so that readers can have a clear picture of the _precision_ of your estimation.   
    
-I particularly like the idea of **bootstrapping** effect sizes, a better approach when the data are known not to be normally distributed or when the distribution is unknown[^8]. I will show you how to do it using the package ```bootES```[^9].   
+I particularly like the idea of **bootstrapping** effect sizes, a better approach when the data are known not to be normally distributed or when the distribution is unknown[^8]. I will show you how to do it using the package ```bootES```[^9].
 
-```{r install_load_bootES, eval = FALSE}
+```{r install_load_bootES_broom, eval = FALSE}
 
 install.packages("bootES")
 library(bootES)
+
+# we also install broom, a package that tidies up the results of statistical models
+install.packages("broom")
+library(broom)
 
 ```
 
@@ -817,7 +822,9 @@ att_bootES <-
       ),
       data = .
     ),
-    tidy = map(bootstrap, broom::tidy, conf.int = TRUE) # extract bootstrap results from each list into new columns
+    tidy = map(bootstrap,
+               broom::tidy, # extract bootstrap results from each list into new columns
+               conf.int = TRUE)
   ) %>%
   ungroup() # ungroup
 

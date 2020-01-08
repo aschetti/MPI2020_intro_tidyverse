@@ -235,7 +235,7 @@ RDIplot_ex_3_1 <-
   theme(
     panel.grid = element_blank(),
     legend.box.background = element_rect(color = "transparent"),
-    legend.position = c(.9, .9),
+    legend.position = c(.9, .2),
     plot.title = element_text(size = 26, hjust = .5)
   )
 

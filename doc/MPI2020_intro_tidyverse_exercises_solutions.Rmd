@@ -142,12 +142,7 @@ Using the output of **Exercise 2.1**:
 ```{r exercise_2_2, message = FALSE}
 
 summary_data_attitude_wine <-
-  read_csv(
-    here(
-      "tidy-data",
-      "data_attitude_wine.csv"
-    )
-  ) %>%
+  data_attitude_wine %>%
   group_by(gender, drink, imagery) %>%
   summarize(
     n = n(),

@@ -243,7 +243,7 @@ In the next code snippet, we simultaneously **select** and **rename** the variab
 
 att_filter_select <-
   att_filter %>%
-  dplyr::select( # there are several functions named 'select', so we need to explicitly call the one from 'dplyr'
+  dplyr::select( # there are several functions named 'select', so we need to explicitly call the one from package 'dplyr'
     participant = ssj, # new name = old name
     sex,
     beer_negative = beerneg,
@@ -347,8 +347,8 @@ This experiment has two independent variables, **drink** and **imagery**. In our
 att_filter_select_recode_long_sep <-
   att_filter_select_recode_long %>%
   separate(condition, c("drink", "imagery"), # separate 'condition' into 'drink' and 'imagery'
-    remove = TRUE
-  ) %>% # remove original column
+    remove = TRUE # remove original column?
+  ) %>%
   # over-write participant, drink, and imagery
   # in order to convert them to factors
   mutate(
@@ -476,7 +476,7 @@ summary_att_filter_select_recode_long_sep_onego <-
     min = min(ratings), # range (min)
     max = max(ratings) # range (max)
   ) %>%
-  ungroup() %>% # better ungroup,to avoid possible conflicts later on
+  ungroup() %>% # better ungroup, to avoid possible conflicts later on
   print() # another way of displaying the results in console
 
 ```
@@ -668,7 +668,7 @@ The same as above, separately for female and male participants (**hint**: use ``
 
 ### Exercise 3 BONUS
 
-Recreate a plot similar to #2 using the [```yarrr```](https://cran.r-project.org/web/packages/yarrr/vignettes/pirateplot.html) package (**warning**: saving the plot to file can be tricky `r emo::ji("wink")`)
+Recreate a plot similar to #2 using the [```yarrr```](https://cran.r-project.org/web/packages/yarrr/vignettes/pirateplot.html) package (**warning**: saving the plot to file can be tricky `r emo::ji("wink")`). Check out [**YaRrr! The Pirate’s Guide to R**](https://bookdown.org/ndphillips/YaRrr/) for help.
 
 ```{r exercise_3_bonus}
 

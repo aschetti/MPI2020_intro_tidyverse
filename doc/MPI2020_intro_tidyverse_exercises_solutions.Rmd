@@ -221,10 +221,6 @@ RDIplot_ex_3_1 <-
     option = "viridis",
     discrete = TRUE
   ) +
-  scale_color_viridis(
-    option = "viridis",
-    discrete = TRUE
-  ) +
   ggtitle("Plot Exercise 3.1") +
   theme_minimal(base_size = 18) +
   theme(

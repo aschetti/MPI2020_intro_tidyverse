@@ -198,7 +198,7 @@ The code above allows us to keep all rows whose values of the variable ```watern
 ```{r filter_NAs_verify}
 
 att_filter %>%
-  filter(ssj == 98)
+  filter(ssj == 99)
 
 ```
 
@@ -600,10 +600,6 @@ RDIplot <- # the plot is saved in this variable
     alpha = .5
   ) +
   scale_fill_viridis( # color palette for all fills
-    option = "viridis",
-    discrete = TRUE
-  ) +
-  scale_color_viridis( # color palette for all outlines
     option = "viridis",
     discrete = TRUE
   ) +

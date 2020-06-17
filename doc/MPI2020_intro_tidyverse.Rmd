@@ -718,7 +718,9 @@ The _**drink x imagery**_ interaction is statistically significant... let's run 
 
 ```{r rmANOVA_paired_contrasts}
 
-library(emmeans) # we didn't explicitly install this package, but it's part of the dependencies of 'afex'
+# we didn't explicitly install these packages, but they are part of the dependencies of 'afex'
+library(emmeans)
+library(multcomp)
 
 # set afex_options as below to use appropriate degrees of freedom (not Satterthwaite approximated)
 # for details, see https://cran.r-project.org/web/packages/afex/vignettes/afex_anova_example.html#post-hoc-contrasts-and-plotting
